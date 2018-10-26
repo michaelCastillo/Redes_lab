@@ -9,7 +9,7 @@ import FFT
 #Entradas
 print ("***MENU***")
 fileName=input("Ingrese el nombre del archivo (sin .wav): ")
-
+flag=input("Desea graficos? (1 SI, 0 NO): ")
 
 
 #Lectura de .wav
@@ -19,5 +19,5 @@ if(len(arrayAux)==0):
 fs_rate=arrayAux[0]
 signal=arrayAux[1]
 
-
-FFT.calculateFFT(fs_rate, signal)
+#Calcular FFT
+FFT.calculateFFT(fs_rate, signal, flag)

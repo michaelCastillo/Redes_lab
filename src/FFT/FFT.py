@@ -7,7 +7,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 
-def calculateFFT(fs_rate, signal):
+def calculateFFT(fs_rate, signal, flag):
     l_audio = len(signal.shape)
     print ("Channels", l_audio)
     if l_audio == 2:
@@ -20,11 +20,12 @@ def calculateFFT(fs_rate, signal):
     print ("Timestep between samples Ts", Ts)
     t = scipy.arange(0, secs, Ts) # time vector as scipy arange field / numpy.ndarray
     FFT = abs(scipy.fft(signal))
-    FFT_side = FFT[range(N//2)] # one side FFT range
     freqs = scipy.fftpack.fftfreq(signal.size, t[1]-t[0])
-    fft_freqs = np.array(freqs)
-    freqs_side = freqs[range(N//2)] # one side frequency range
-    fft_freqs_side = np.array(freqs_side)
+    if(flag=="1"):
+        graphics(FFT, freqs, signal, t)
+    return 
+
+def graphics(FFT, freqs, signal, t):
     plt.subplot(311)
     p1 = plt.plot(t, signal, "g") # plotting the signal
     plt.xlabel('Time')
@@ -34,8 +35,4 @@ def calculateFFT(fs_rate, signal):
     p2 = plt.plot(freqs, FFT, "r") # plotting the complete fft spectrum
     plt.xlabel('Frequency (Hz)')
     plt.ylabel('Count dbl-sided')
-    plt.subplot(313)
-    p3 = plt.plot(freqs_side, abs(FFT_side), "b") # plotting the positive fft spectrum
-    plt.xlabel('Frequency (Hz)')
-    plt.ylabel('Count single-sided')
     plt.show()
