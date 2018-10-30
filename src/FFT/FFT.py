@@ -7,6 +7,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 
+
 def calculateFFT(fs_rate, signal, flag):
     l_audio = len(signal.shape)
     print ("Channels", l_audio)
@@ -35,4 +36,19 @@ def graphics(FFT, freqs, signal, t):
     p2 = plt.plot(freqs, FFT, "r") # plotting the complete fft spectrum
     plt.xlabel('Frequency (Hz)')
     plt.ylabel('Count dbl-sided')
+    plt.show()
+
+def getFrequencyTimePlot(samplingFrequency,signalData):
+    # Read the wav file (mono)
+
+    # Plot the signal read from wav file
+    plt.subplot(211)
+    plt.title('Spectrogram of a wav file with piano music')
+    plt.plot(signalData)
+    plt.xlabel('Sample')
+    plt.ylabel('Amplitude')
+    plt.subplot(212)
+    plt.specgram(signalData,Fs=samplingFrequency)
+    plt.xlabel('Time')
+    plt.ylabel('Frequency')
     plt.show()
