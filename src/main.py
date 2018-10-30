@@ -1,6 +1,8 @@
 import sys
 sys.path.insert(0, 'Files InOut')
 import fileDirector
+sys.path.insert(0, 'SoundInterface')
+import SoundIn
 sys.path.insert(0, 'FFT')
 import FFT
 from scipy.io import wavfile
@@ -25,7 +27,7 @@ fs_rate=arrayAux[0]
 print("fs" + str(fs_rate))
 signal=arrayAux[1]
 
-fileDirector.microphone()
+SoundIn.microphone()
 
 #Calcular FFT
 #FFT.calculateFFT(fs_rate, signal, flag)
