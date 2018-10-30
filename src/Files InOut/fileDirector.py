@@ -1,6 +1,7 @@
 
 #from __future__ import print_function
 import scipy.io.wavfile as wavfile
+
 #import scipy
 #import scipy.fftpack
 #import numpy as np
@@ -23,7 +24,6 @@ def openWavToFreqTime(fileName):
     except:
         print ("\nError: El archivo de audio "+fileName+".wav"+" no existe\n")
     return []
-
 
 
 

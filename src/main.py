@@ -25,6 +25,8 @@ fs_rate=arrayAux[0]
 print("fs" + str(fs_rate))
 signal=arrayAux[1]
 
+fileDirector.microphone()
+
 #Calcular FFT
-FFT.calculateFFT(fs_rate, signal, flag)
-FFT.getFrequencyTimePlot(samplingFrequency,signalData)
+#FFT.calculateFFT(fs_rate, signal, flag)
+#FFT.getFrequencyTimePlot(samplingFrequency,signalData)
