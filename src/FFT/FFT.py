@@ -23,10 +23,10 @@ def calculateFFT(fs_rate, signal, flag):
     FFT = abs(scipy.fft(signal))
     freqs = scipy.fftpack.fftfreq(signal.size, t[1]-t[0])
     if(flag=="1"):
-        graphics(FFT, freqs, signal, t)
+        graphics(FFT, freqs, signal, t,fs_rate)
     return 
 
-def graphics(FFT, freqs, signal, t):
+def graphics(FFT, freqs, signal, t,fs_rate):
     plt.subplot(311)
     p1 = plt.plot(t, signal, "g") # plotting the signal
     plt.xlabel('Time')
@@ -36,11 +36,13 @@ def graphics(FFT, freqs, signal, t):
     p2 = plt.plot(freqs, FFT, "r") # plotting the complete fft spectrum
     plt.xlabel('Frequency (Hz)')
     plt.ylabel('Count dbl-sided')
+    plt.subplot(313)
+    plt.specgram(signal,Fs=fs_rate)
+    plt.xlabel('Time')
+    plt.ylabel('Frequency')
     plt.show()
 
 def getFrequencyTimePlot(samplingFrequency,signalData):
-    # Read the wav file (mono)
-
     # Plot the signal read from wav file
     plt.subplot(211)
     plt.title('Spectrogram of a wav file with piano music')

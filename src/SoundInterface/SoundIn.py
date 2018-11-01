@@ -8,7 +8,7 @@ def microphone():
     CHANNELS = 2
     RATE = 44100
     RECORD_SECONDS = 5
-    WAVE_OUTPUT_FILENAME = "output.wav"
+    WAVE_OUTPUT_FILENAME = "../Wav/output.wav"
 
     p = pyaudio.PyAudio()
 
