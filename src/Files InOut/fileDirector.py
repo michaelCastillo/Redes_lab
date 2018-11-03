@@ -10,7 +10,7 @@ import numpy as np
 
 
 def openWav(fileName):
-    
+    try:
         fs_rate, signal = wavfile.read("../Wav/"+fileName+".wav")
         fs_signal = []
         print("Signal TIPO")
@@ -22,9 +22,9 @@ def openWav(fileName):
             signal = np.asarray(fs_signal)
         print(fs_rate,signal)
         return fs_rate, signal
-    
+    except:
         print ("\nError: El archivo de audio "+fileName+".wav"+" no existe\n")
-    
+    return []
 
 def openWavToFreqTime(fileName):
     try:

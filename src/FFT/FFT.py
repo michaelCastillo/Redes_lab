@@ -9,6 +9,8 @@ from matplotlib import pyplot as plt
 
 
 def calculateFFT(fs_rate, signal, flag):
+    
+    print(flag)
     l_audio = len(signal.shape)
     print ("Channels", l_audio)
     if l_audio == 2:
