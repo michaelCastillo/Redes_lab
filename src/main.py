@@ -39,19 +39,17 @@ def record():
     Button(recordWindow, text = "Comenzar grabación", command = lambda: recordButtonAux(fileNameRecord.get(), int(recordSeconds.get()), text1)).grid(row=2,column=0, sticky=W, pady=4)
     Button(recordWindow, text = "Atrás", command = recordWindow.destroy).grid(row=2,column=1, sticky=W, pady=4)
 
-def fourierFile(fileName, text1, fButton1, fButton2):
+def fourierFile(fileName, text1, fButton2):
     arrayAux = fileDirector.openWav(fileName.get())
     global fs_rate 
     global signal
     if(len(arrayAux)==0):
         messagebox.showinfo("Error", "Archivo de entrada no existe")
-        fButton1['state']='disabled'
         fButton2['state']='disabled'
     else:
         fs_rate=arrayAux[0]
         signal=arrayAux[1]
         text1.set("Archivo actual: "+fileName.get()+".wav")    
-        fButton1['state']='normal'
         fButton2['state']='normal'
 
 def fourier():
@@ -66,14 +64,12 @@ def fourier():
     fileName = Entry(fourierWindow)
     fileName.grid(row=0, column=1)
     #Botones
-    fourierButton1=Button(fourierWindow, state=DISABLED, text = "Calcular transformada", 
-        command = lambda: FFT.calculateFFT(fs_rate, signal))
-    fourierButton1.grid(row=2, column=0, sticky=W, pady=4)
+    
     fourierButton2=Button(fourierWindow, state=DISABLED, text = "Calcular transformada y graficar", 
         command = lambda: FFT.graphics(fs_rate, signal))
     fourierButton2.grid(row=2, column=1, sticky=W, pady=4)
     Button(fourierWindow, text = "Abrir archivo", 
-        command = lambda: fourierFile(fileName, text1,fourierButton1, fourierButton2)).grid(row=1, column=0, sticky=W, pady=4)
+        command = lambda: fourierFile(fileName, text1, fourierButton2)).grid(row=1, column=0, sticky=W, pady=4)
 
 
 master = Tk()
