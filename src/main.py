@@ -67,10 +67,10 @@ def fourier():
     fileName.grid(row=0, column=1)
     #Botones
     fourierButton1=Button(fourierWindow, state=DISABLED, text = "Calcular transformada", 
-        command = lambda: FFT.calculateFFT(fs_rate, signal,"0"))
+        command = lambda: FFT.calculateFFT(fs_rate, signal))
     fourierButton1.grid(row=2, column=0, sticky=W, pady=4)
     fourierButton2=Button(fourierWindow, state=DISABLED, text = "Calcular transformada y graficar", 
-        command = lambda: FFT.calculateFFT(fs_rate, signal,"1"))
+        command = lambda: FFT.graphics(fs_rate, signal))
     fourierButton2.grid(row=2, column=1, sticky=W, pady=4)
     Button(fourierWindow, text = "Abrir archivo", 
         command = lambda: fourierFile(fileName, text1,fourierButton1, fourierButton2)).grid(row=1, column=0, sticky=W, pady=4)
