@@ -5,9 +5,12 @@ sys.path.insert(0, 'SoundInterface')
 import SoundIn as sin
 sys.path.insert(0, 'FFT')
 import FFT
+from tkinter import ttk
 import threading
 from scipy.io import wavfile
 from tkinter import *
+from matplotlib import pyplot as plt
+
 
 from tkinter import messagebox
 
@@ -52,6 +55,13 @@ def fourierFile(fileName, text1, fButton2):
         text1.set("Archivo actual: "+fileName.get()+".wav")    
         fButton2['state']='normal'
 
+def graphButtonAux(fs_rate, signal, fileName, mpb):
+    global record_threadFourier
+    record_threadFourier = threading.Thread(target=
+        lambda:FFT.graphics(fs_rate, signal, fileName, mpb))
+    record_threadFourier.daemon = True
+    record_threadFourier.start()
+    plt.show()
 def fourier():
     #Creacion de la ventana
     fourierWindow = Toplevel()
@@ -64,10 +74,14 @@ def fourier():
     fileName = Entry(fourierWindow)
     fileName.grid(row=0, column=1)
     #Botones
-    
+    mpb = ttk.Progressbar(fourierWindow,orient ="horizontal",length = 100, mode ="determinate")
+    mpb["maximum"] = 100
+    mpb["value"] = 0
+    mpb.grid(row=2, column=1)
     fourierButton2=Button(fourierWindow, state=DISABLED, text = "Calcular transformada y graficar", 
-        command = lambda: FFT.graphics(fs_rate, signal))
-    fourierButton2.grid(row=2, column=1, sticky=W, pady=4)
+        command = lambda: graphButtonAux(fs_rate, signal, fileName.get(), mpb))
+    fourierButton2.grid(row=2, column=0, sticky=W, pady=4)
+    
     Button(fourierWindow, text = "Abrir archivo", 
         command = lambda: fourierFile(fileName, text1, fourierButton2)).grid(row=1, column=0, sticky=W, pady=4)
 

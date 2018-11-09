@@ -115,7 +115,7 @@ def plotSpec(signal,fs_rate,title):
 # Mostrar todas las gráficas 
 ####################################
 
-def graphics(fs_rate,signal):
+def graphics(fs_rate,signal,fileName, mpb):
 
     title_normal = "Audio original"
     #Graficas del audio original
@@ -123,17 +123,19 @@ def graphics(fs_rate,signal):
     plt.figure(1)
     plt.subplot(311)
     plotSignalTime(signal,getSignalTime(fs_rate,signal),title_normal)
-    
 
     #Se obtiene la transformada de fourier
     xfft,fft = calcFFT(fs_rate,signal)
     #Se grafica la transformada del audio original
     plt.subplot(312)
     plotTransform(xfft,fft,title_normal)
-
     #Se grafica el espectrograma del audio original
     plt.subplot(313)
     plotSpec(signal,fs_rate,title_normal)
+
+    plt.subplots_adjust(hspace=0.9)
+    plt.savefig('../plots/'+fileName+'1.png')
+    mpb["value"] = 25
     #Graficas con filtro paso bajo
     #Se obtiene la señal vs tiempo con el filtro paso bajo
     title_lowPass = "filtro paso bajo"
@@ -151,10 +153,13 @@ def graphics(fs_rate,signal):
     #Se grafica el espectrograma del audio con filtro paso bajo
     plt.subplot(313)
     plotSpec(filteredSignal,fs_rate,title_lowPass)
-
+    plt.subplots_adjust(hspace=0.9)
+    mpb["value"] = 50
+    plt.savefig('../plots/'+fileName+'2.png')
     ################## PASO ALTO ##################
     title_highPass = "filtro paso banda"
     plt.figure(4)
+
     plt.subplot(311)
     xFilteredHigh,filteredSignalHigh = passBandFilter(fs_rate,1200,7000,signal)
     plotSignalTime(filteredSignalHigh,xFilteredHigh,title_highPass)
@@ -168,7 +173,11 @@ def graphics(fs_rate,signal):
     #Se grafica el espectrograma del audio con filtro paso bajo
     plt.subplot(313)
     plotSpec(filteredSignalHigh,fs_rate,title_highPass)
+    plt.subplots_adjust(hspace=0.9)
     
+    plt.savefig('../plots/'+fileName+'4.png')
+    mpb["value"] = 75
+
     ################## PASO BANDA ##################
     title_passBand = "filtro paso alto"
     plt.figure(3)
@@ -185,8 +194,11 @@ def graphics(fs_rate,signal):
     #Se grafica el espectrograma del audio con filtro paso bajo
     plt.subplot(313)
     plotSpec(filteredPassBand,fs_rate,title_passBand)
-
-    plt.show()
+    plt.subplots_adjust(hspace=0.9)
+    
+    plt.savefig('../plots/'+fileName+'3.png')
+    mpb["value"] = 100
+    #plt.show()
     # plt.figure(1)
     # plt.subplot(311)
     # p1 = plt.plot(t, signal, "g") # plotting the signal
@@ -203,7 +215,7 @@ def graphics(fs_rate,signal):
     # p4 = plt.plot(xFilter,filteredSignal,"g")
     # plt.xlabel('dbs')
     # plt.ylabel('Frequency')
-    plt.show()
+    #plt.show()
 
 
 
