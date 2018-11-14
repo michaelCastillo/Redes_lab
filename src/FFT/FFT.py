@@ -111,12 +111,54 @@ def plotSpec(signal,fs_rate,title):
     plt.title("Espectrograma "+title)
     plt.specgram(signal,Fs=fs_rate)
 
+###################################
+# Modulacion
+###################################
+
+def modulation(signal,fs_rate,fZero):
+    
+    #Se tienen que tener la misma cantidad de datos para poder multiplicar  
+    #Hacerlo con un coseno pequeño 
+    # en el tiempo hay que ver
+    # : señal que esta entrando
+    # señal portadora
+    # multiplicación de los 2 
+    # y los mismos 3 en frecuencia.
+    time = np.linspace(0,0.01,0.01*50*fZero,endpoint=False)
+    amplitude = np.cos(time*2*np.pi*fZero)
+    print("###### SIGNAL ###########")
+    print(len(signal),0.01*50*fZero)
+    plt.figure(1)
+    plt.subplot(311)
+    plt.plot(time, amplitude, '*-')
+    # Give a title for the sine wave plot
+    plt.title('Sine wave')
+    # Give x axis label for the sine wave plot
+    plt.xlabel('Time')
+    # Give y axis label for the sine wave plot
+    plt.ylabel('Amplitude = sin(time)')
+    plt.grid(True, which='both')
+    plt.axhline(y=0, color='k')
+    fileName = "mod"
+    xfft,fft = calcFFT(fs_rate,amplitude)
+    title_normal = "transform "
+    plt.subplot(312)
+    plotTransform(xfft,fft,title_normal)
+    plt.savefig('../plots/'+fileName+'2.png')
+    
+    
+
+
+
 ####################################
 # Mostrar todas las gráficas 
 ####################################
 
 def graphics(fs_rate,signal,fileName, mpb):
 
+    modulation(signal,fs_rate,1000)
+
+    """
     title_normal = "Audio original"
     #Graficas del audio original
     #Se obtiene la grafica del audio vs tiempo
@@ -216,6 +258,7 @@ def graphics(fs_rate,signal,fileName, mpb):
     # plt.xlabel('dbs')
     # plt.ylabel('Frequency')
     #plt.show()
+    """
 
 
 
