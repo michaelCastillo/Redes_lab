@@ -63,6 +63,7 @@ def fourier():
     Label(fourierWindow, textvariable=text1).grid(row=1, column=1)
     fileName = Entry(fourierWindow)
     fileName.grid(row=0, column=1)
+    
     #Botones
     
     fourierButton2=Button(fourierWindow, state=DISABLED, text = "Calcular transformada y graficar", 

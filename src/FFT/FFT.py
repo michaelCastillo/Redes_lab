@@ -9,6 +9,7 @@ from matplotlib import pyplot as plt
 
 
 
+
 #################################
 # Calculo y gráfica de la transformada de fourier
 ################################
@@ -82,7 +83,7 @@ def passBandFilter(fs,backLimit,upLimit,signal):
 # Grafica de señal vs tiempo
 ##################################
 
-def plotSignalTime(signal,t,title):
+def plotSignalTime(signal,t,title,dot):
     # if(cplot%3 == 0):
     #     cplot = 101 +cplot
     #     plt.subplot(cplot)
@@ -91,7 +92,10 @@ def plotSignalTime(signal,t,title):
     #     cplot = 101 +cplot
     #     plt.subplot(cplot)
 
-    plt.plot(t,signal)
+    if(dot):
+        plt. plot(t,signal,'*-') 
+    else:
+        plt. plot(t,signal) 
     plt.title("Amplitud vs tiempo "+title)
     plt.xlabel("Tiempo [s]")
     plt.ylabel("Amplitud [dB]")
@@ -116,13 +120,16 @@ def plotSpec(signal,fs_rate,title):
 ####################################
 
 def graphics(fs_rate,signal):
-
+    
+    modulation(signal,fs_rate,10000)
+    plt.show()
+"""
     title_normal = "Audio original"
     #Graficas del audio original
     #Se obtiene la grafica del audio vs tiempo
     plt.figure(1)
     plt.subplot(311)
-    plotSignalTime(signal,getSignalTime(fs_rate,signal),title_normal)
+    plotSignalTime(signal,getSignalTime(fs_rate,signal),title_normal,False)
     
 
     #Se obtiene la transformada de fourier
@@ -140,7 +147,7 @@ def graphics(fs_rate,signal):
     plt.figure(2)
     plt.subplot(311)
     xFiltered,filteredSignal = lowFilter(fs_rate,1200,signal)
-    plotSignalTime(filteredSignal,xFiltered,title_lowPass)
+    plotSignalTime(filteredSignal,xFiltered,title_lowPass,False)
 
     #Se grafica la transformada del audio con filtro paso bajo
     xlow,fftLow = calcFFT(fs_rate,filteredSignal)
@@ -157,7 +164,7 @@ def graphics(fs_rate,signal):
     plt.figure(4)
     plt.subplot(311)
     xFilteredHigh,filteredSignalHigh = passBandFilter(fs_rate,1200,7000,signal)
-    plotSignalTime(filteredSignalHigh,xFilteredHigh,title_highPass)
+    plotSignalTime(filteredSignalHigh,xFilteredHigh,title_highPass,False)
 
     #Se grafica la transformada del audio con filtro paso bajo
     xhigh,fftHigh = calcFFT(fs_rate,filteredSignalHigh)
@@ -174,7 +181,7 @@ def graphics(fs_rate,signal):
     plt.figure(3)
     plt.subplot(311)
     xFilteredPassBand,filteredPassBand = highFilter(fs_rate,7000,signal)
-    plotSignalTime(filteredPassBand,xFilteredPassBand,title_passBand)
+    plotSignalTime(filteredPassBand,xFilteredPassBand,title_passBand,False)
 
     #Se grafica la transformada del audio con filtro paso bajo
     xPassBand,fftPassBand = calcFFT(fs_rate,filteredPassBand)
@@ -203,8 +210,8 @@ def graphics(fs_rate,signal):
     # p4 = plt.plot(xFilter,filteredSignal,"g")
     # plt.xlabel('dbs')
     # plt.ylabel('Frequency')
-    plt.show()
-
+    #plt.show()
+ """
 
 
 def getFrequencyTimePlot(samplingFrequency,signalData):
@@ -233,40 +240,70 @@ def butter_lowpass_filter(data, cutoff, fs, order=5):
     y = lfilter(b, a, data)
     return y
 
-
-
-
-
-
-
-
-
-"""
-def calculateFFT(fs_rate, signal, flag):
+def modulation(signal,fs_rate,fZero):
     
-    print(flag)
-    l_audio = len(signal.shape)
-    print ("Channels", l_audio)
+    #Se tienen que tener la misma cantidad de datos para poder multiplicar  
+    #Hacerlo con un coseno pequeño 
+    # en el tiempo hay que ver
+    # : señal que esta entrando
+    # señal portadora
+    # multiplicación de los 2 
+    # y los mismos 3 en frecuencia.
+
+    #Se obtiene una función portadora. 
+    plt.figure(1)
+    plt.subplot(311)
+    xCarrier, yCarrier = getCarrierFunction(0.01,0.01,fZero)
+    plotSignalTime(yCarrier,xCarrier,"Amplitud vs t PORTADORA",True)
+
+    #Se calcula la transformada de la portadora y se puede notar que
+    # corresponde a dos impulsos, o al menos a eso se acerca a medida
+    # de que le damos más muestras por segundo.
+    plt.subplot(312)
+    xfft,fft = calcFFT(fs_rate,yCarrier)
+    plotTransform(xfft,fft,"Transformada señal portadora")
+
+    #Se obtiene una funcion de ejemplo para modular
+    xMod,yMod = getSampleFunction(0.005,0.01,fZero)
+
+    carrier = [xCarrier,yCarrier]
+    modulizer = [xMod,yMod]
+    plotCarrierAndModulizerFunctions(carrier,modulizer,2)
     
-    if l_audio == 2:
-        signal = signal.sum(axis=1) / 2
+    #Se genera la modulación entre los dos cosenos.
+
+
+def getCarrierFunction(time, samplesPerSec,fZero):
+    time = np.linspace(0,time,samplesPerSec*4*fZero,endpoint=False)
+    amplitude = np.cos(time*2*np.pi*fZero)
+    return time,amplitude
+
+def getSampleFunction(time,samplesPerSec,fZero):
+    time = np.linspace(0,time,samplesPerSec*4*fZero,endpoint=False)
+    amplitude = np.cos(time*2*np.pi*(fZero/2))
+    return time,amplitude
+
+def plotCarrierAndModulizerFunctions(carrier,modulizer,nFigure):
+    plt.figure(nFigure)
+    plt.subplot(311)
+    plotSignalTime(carrier[1],carrier[0],"Amplitud vs t PORTADORA",True)
+    plt.subplot(312)
+    plotSignalTime(modulizer[1],modulizer[0],"Amplitud vs t MODULARIZADORA",True)
+
+    print("len carr = ",len(carrier[0]))
+    print("len mod= ",len(modulizer[0]))
+    modulizedSignal =  carrier[1]*modulizer[1]
+    xfft,fftMod = calcFFT(4*10000,modulizedSignal)
+    xModulizer,yModulizer = calcFFT(4*10000,modulizer[1])
+    xPor,yPor = calcFFT(4*10000,carrier[1])
+    plt.figure(3)
+
+    plt.subplot(311)
+    plotTransform(xPor,yPor, "Señal Portadora")
+
+    plt.subplot(312)
+    plotTransform(xModulizer,yModulizer, "Señal Original")
+
+    plt.subplot(313)
+    plotTransform(xfft,fftMod, "Señal Modulada")
     
-    N = signal.shape[0]
-    print ("Complete Samplings N", N)
-    secs = N / float(fs_rate)
-    print ("secs", secs)
-    Ts = 1.0/fs_rate # sampling interval in time
-    print ("Timestep between samples Ts", Ts)
-    t = scipy.arange(0, secs, Ts) # time vector as scipy arange field / numpy.ndarra
-    #Filtro de la señal
-    xFilter,filteredSignal = lowFilter(fs_rate,1200,signal)
-    xfft, FFT = calcFFT(fs_rate,signal)
-    xFilter, FFT_filtered = calcFFT(xFilter,filteredSignal)
-    freqs = scipy.fftpack.fftfreq(signal.size, t[1]-t[0])
-    print("Filtered => \n")
-    print(filteredSignal)
-    #exit()
-    if(flag=="1"):
-        graphics(FFT, xfft, signal, t,fs_rate,FFT_filtered,xFilter)
-    return
-"""
