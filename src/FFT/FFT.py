@@ -3,7 +3,7 @@ from __future__ import print_function
 import scipy.io.wavfile as wavfile
 import scipy
 from scipy.signal import butter, lfilter, freqz, firwin
-import scipy.fftpack
+from scipy import fftpack
 import numpy as np
 from matplotlib import pyplot as plt
 
@@ -121,8 +121,16 @@ def plotSpec(signal,fs_rate,title):
 
 def graphics(fs_rate,signal):
     
-    modulation(signal,fs_rate,10000)
+    ##Esta es una modulacion con una función coseno de ejemplo
+    #Se obtiene: 
+    #    portadora : coseno con frecuencia = f Hz
+    #   moduladora: coseno con frecuencia = f/2 Hz
+    # con una frecuencia determinada. 
+    freq = 100
+    fs_rate = 4*freq #la frecuencia de muestreo debe ser al menos 4 la frecuencia (Por qué ? lo lei por ahi y funciona)
+    modulation(signal,fs_rate,freq)
     plt.show()
+    # sampleCosine()
 """
     title_normal = "Audio original"
     #Graficas del audio original
@@ -253,7 +261,8 @@ def modulation(signal,fs_rate,fZero):
     #Se obtiene una función portadora. 
     plt.figure(1)
     plt.subplot(311)
-    xCarrier, yCarrier = getCarrierFunction(0.01,0.01,fZero)
+    time = 0.01
+    xCarrier, yCarrier = getCarrierFunction(time,fs_rate,fZero)
     plotSignalTime(yCarrier,xCarrier,"Amplitud vs t PORTADORA",True)
 
     #Se calcula la transformada de la portadora y se puede notar que
@@ -264,26 +273,29 @@ def modulation(signal,fs_rate,fZero):
     plotTransform(xfft,fft,"Transformada señal portadora")
 
     #Se obtiene una funcion de ejemplo para modular
-    xMod,yMod = getSampleFunction(0.005,0.01,fZero)
+    xMod,yMod = getSampleFunction(time,fs_rate,fZero)
 
     carrier = [xCarrier,yCarrier]
     modulizer = [xMod,yMod]
-    plotCarrierAndModulizerFunctions(carrier,modulizer,2)
+    plotCarrierAndModulizerFunctions(carrier,modulizer,fs_rate,2)
     
     #Se genera la modulación entre los dos cosenos.
 
-
 def getCarrierFunction(time, samplesPerSec,fZero):
-    time = np.linspace(0,time,samplesPerSec*4*fZero,endpoint=False)
-    amplitude = np.cos(time*2*np.pi*fZero)
-    return time,amplitude
+    
+    # time = np.arange(0,time,1.0/samplesPerSec)
+    t = np.linspace(0, 2, 2 * samplesPerSec, endpoint=False)
+    x = np.sin(fZero * 2 * np.pi * t)
+    #time = np.linspace(0,time,samplesPerSec*4*fZero,endpoint=False)
+    return t,x
 
 def getSampleFunction(time,samplesPerSec,fZero):
-    time = np.linspace(0,time,samplesPerSec*4*fZero,endpoint=False)
-    amplitude = np.cos(time*2*np.pi*(fZero/2))
-    return time,amplitude
+    t = np.linspace(0, 2, 2 * samplesPerSec, endpoint=False)
+    fZero = fZero/2
+    x = np.sin(fZero * 2 * np.pi * t)
+    return t,x
 
-def plotCarrierAndModulizerFunctions(carrier,modulizer,nFigure):
+def plotCarrierAndModulizerFunctions(carrier,modulizer,fs_rate,nFigure):
     plt.figure(nFigure)
     plt.subplot(311)
     plotSignalTime(carrier[1],carrier[0],"Amplitud vs t PORTADORA",True)
@@ -293,9 +305,9 @@ def plotCarrierAndModulizerFunctions(carrier,modulizer,nFigure):
     print("len carr = ",len(carrier[0]))
     print("len mod= ",len(modulizer[0]))
     modulizedSignal =  carrier[1]*modulizer[1]
-    xfft,fftMod = calcFFT(4*10000,modulizedSignal)
-    xModulizer,yModulizer = calcFFT(4*10000,modulizer[1])
-    xPor,yPor = calcFFT(4*10000,carrier[1])
+    xfft,fftMod = calcFFT(fs_rate,modulizedSignal)
+    xModulizer,yModulizer = calcFFT(fs_rate,modulizer[1])
+    xPor,yPor = calcFFT(fs_rate,carrier[1])
     plt.figure(3)
 
     plt.subplot(311)
