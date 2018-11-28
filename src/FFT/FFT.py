@@ -6,6 +6,8 @@ from scipy.signal import butter, lfilter, freqz, firwin
 from scipy import fftpack
 import numpy as np
 from matplotlib import pyplot as plt
+from scipy.interpolate import interp1d
+
 
 
 
@@ -99,6 +101,7 @@ def plotSignalTime(signal,t,title,dot):
     plt.title("Amplitud vs tiempo "+title)
     plt.xlabel("Tiempo [s]")
     plt.ylabel("Amplitud [dB]")
+
 def getSignalTime(fs_rate,signal):
     
     signal_len = float(len(signal))
@@ -126,11 +129,14 @@ def graphics(fs_rate,signal):
     #    portadora : coseno con frecuencia = f Hz
     #   moduladora: coseno con frecuencia = f/2 Hz
     # con una frecuencia determinada. 
-    freq = 100
-    fs_rate = 4*freq #la frecuencia de muestreo debe ser al menos 4 la frecuencia (Por qué ? lo lei por ahi y funciona)
+    freq = 20000
+    #fs_rate = 4*freq #la frecuencia de muestreo debe ser al menos 4 la frecuencia (Por qué ? lo lei por ahi y funciona)
     modulation(signal,fs_rate,freq)
     plt.show()
-    # sampleCosine()
+    
+    
+
+
 """
     title_normal = "Audio original"
     #Graficas del audio original
@@ -262,24 +268,43 @@ def modulation(signal,fs_rate,fZero):
     plt.figure(1)
     plt.subplot(311)
     time = 0.01
-    xCarrier, yCarrier = getCarrierFunction(time,fs_rate,fZero)
+
+    #xCarrier, yCarrier = getCarrierFunction(time,fs_rate,fZero)
+    xCarrier, yCarrier = getCarrierWithAudio(time, len(signal), fZero)
     plotSignalTime(yCarrier,xCarrier,"Amplitud vs t PORTADORA",True)
 
     #Se calcula la transformada de la portadora y se puede notar que
     # corresponde a dos impulsos, o al menos a eso se acerca a medida
     # de que le damos más muestras por segundo.
     plt.subplot(312)
-    xfft,fft = calcFFT(fs_rate,yCarrier)
+    xfft,fft = calcFFT(len(signal)/10,yCarrier)
     plotTransform(xfft,fft,"Transformada señal portadora")
 
     #Se obtiene una funcion de ejemplo para modular
-    xMod,yMod = getSampleFunction(time,fs_rate,fZero)
+    #xMod,yMod = getSampleFunction(time,fs_rate,fZero)
+    #Se usa el audio obtenido
+    # f = getCarrierWithAudio(time, fs_rate, len(signal), fZero)
+    xMod =  getSignalTime(fs_rate,signal)
+    yMod = signal
 
     carrier = [xCarrier,yCarrier]
     modulizer = [xMod,yMod]
     plotCarrierAndModulizerFunctions(carrier,modulizer,fs_rate,2)
     
-    #Se genera la modulación entre los dos cosenos.
+
+    #Demodulación
+    yDemod = yMod*yCarrier
+    demod = xMod,yDemod
+    demodulation(carrier,demod,fs_rate,2)
+    
+
+def demodulation(carrier,demod,fs_rate,plotType):
+
+    y = butter_lowpass_filter(demod[1], 7000, fs_rate, order=5)    
+    demodToPlot = demod[0],y
+    plotCarrierAndModulizerFunctions(carrier,demodToPlot,fs_rate,plotType)
+
+
 
 def getCarrierFunction(time, samplesPerSec,fZero):
     
@@ -288,6 +313,15 @@ def getCarrierFunction(time, samplesPerSec,fZero):
     x = np.sin(fZero * 2 * np.pi * t)
     #time = np.linspace(0,time,samplesPerSec*4*fZero,endpoint=False)
     return t,x
+
+def getCarrierWithAudio(time,  numSamples, fZero):
+    print("NumSamp/10 => "+str(numSamples/10))
+    x = np.linspace(0, 10, num=numSamples, endpoint=True)
+    y = np.cos(fZero*2*np.pi*x)
+    print("Y +. "+str(len(y)))
+    # f = interp1d(x, y)
+    # print("F => "+str(len(f) ))
+    return x,y
 
 def getSampleFunction(time,samplesPerSec,fZero):
     t = np.linspace(0, 2, 2 * samplesPerSec, endpoint=False)
