@@ -299,7 +299,7 @@ def modulation(signal,fs_rate,fZero):
 
 def demodulation(carrier,demod,fs_rate,plotType):
 
-    y = butter_lowpass_filter(demod[1], 15000, fs_rate, order=5)    
+    y = butter_lowpass_filter(demod[1], 10000, fs_rate, order=5)    
     demodToPlot = demod[0],y
     plotCarrierAndModulizerFunctions(carrier,demodToPlot,fs_rate,plotType)
 
