@@ -29,7 +29,7 @@ def plotTransform(xft,ft,title):
     plt.xlabel("Frequency [Hz]")
     plt.ylabel("Amplitud [dB]")
     plt.plot(xft,abs(ft))
-
+    
 def invTransform(ft,lenFreq):
     fourierTInv = scipy.ifft(ft)*lenFreq
     return fourierTInv
@@ -129,103 +129,17 @@ def graphics(fs_rate,signal):
     #    portadora : coseno con frecuencia = f Hz
     #   moduladora: coseno con frecuencia = f/2 Hz
     # con una frecuencia determinada. 
-    freq = 20000
+    freq = 5000
     #fs_rate = 4*freq #la frecuencia de muestreo debe ser al menos 4 la frecuencia (Por qué ? lo lei por ahi y funciona)
-    modulation(signal,fs_rate,freq)
+    time =  float(len(signal))/float(fs_rate)
+    print("TIME => "+str(time))
+    fs_rate = 4*freq  #Para que se cumpla el teorema de nyquist.
+    
+    newModulation(signal,fs_rate,time,freq)
     plt.show()
     
     
 
-
-"""
-    title_normal = "Audio original"
-    #Graficas del audio original
-    #Se obtiene la grafica del audio vs tiempo
-    plt.figure(1)
-    plt.subplot(311)
-    plotSignalTime(signal,getSignalTime(fs_rate,signal),title_normal,False)
-    
-
-    #Se obtiene la transformada de fourier
-    xfft,fft = calcFFT(fs_rate,signal)
-    #Se grafica la transformada del audio original
-    plt.subplot(312)
-    plotTransform(xfft,fft,title_normal)
-
-    #Se grafica el espectrograma del audio original
-    plt.subplot(313)
-    plotSpec(signal,fs_rate,title_normal)
-    #Graficas con filtro paso bajo
-    #Se obtiene la señal vs tiempo con el filtro paso bajo
-    title_lowPass = "filtro paso bajo"
-    plt.figure(2)
-    plt.subplot(311)
-    xFiltered,filteredSignal = lowFilter(fs_rate,1200,signal)
-    plotSignalTime(filteredSignal,xFiltered,title_lowPass,False)
-
-    #Se grafica la transformada del audio con filtro paso bajo
-    xlow,fftLow = calcFFT(fs_rate,filteredSignal)
-    plt.subplot(312)
-    plotTransform(xlow,fftLow,title_lowPass)
-
-    
-    #Se grafica el espectrograma del audio con filtro paso bajo
-    plt.subplot(313)
-    plotSpec(filteredSignal,fs_rate,title_lowPass)
-
-    ################## PASO ALTO ##################
-    title_highPass = "filtro paso banda"
-    plt.figure(4)
-    plt.subplot(311)
-    xFilteredHigh,filteredSignalHigh = passBandFilter(fs_rate,1200,7000,signal)
-    plotSignalTime(filteredSignalHigh,xFilteredHigh,title_highPass,False)
-
-    #Se grafica la transformada del audio con filtro paso bajo
-    xhigh,fftHigh = calcFFT(fs_rate,filteredSignalHigh)
-    plt.subplot(312)
-    plotTransform(xhigh,fftHigh,title_highPass)
-
-    
-    #Se grafica el espectrograma del audio con filtro paso bajo
-    plt.subplot(313)
-    plotSpec(filteredSignalHigh,fs_rate,title_highPass)
-    
-    ################## PASO BANDA ##################
-    title_passBand = "filtro paso alto"
-    plt.figure(3)
-    plt.subplot(311)
-    xFilteredPassBand,filteredPassBand = highFilter(fs_rate,7000,signal)
-    plotSignalTime(filteredPassBand,xFilteredPassBand,title_passBand,False)
-
-    #Se grafica la transformada del audio con filtro paso bajo
-    xPassBand,fftPassBand = calcFFT(fs_rate,filteredPassBand)
-    plt.subplot(312)
-    plotTransform(xPassBand,fftPassBand,title_passBand)
-
-    
-    #Se grafica el espectrograma del audio con filtro paso bajo
-    plt.subplot(313)
-    plotSpec(filteredPassBand,fs_rate,title_passBand)
-
-    plt.show()
-    # plt.figure(1)
-    # plt.subplot(311)
-    # p1 = plt.plot(t, signal, "g") # plotting the signal
-    # plt.xlabel('Time')
-    # plt.ylabel('Amplitude')
-    # plt.subplot(312)
-    # p2 = plt.plot(freqs, FFT, "r") # plotting the complete fft spectrum
-    # # plt.subplot(313)
-    # # p3 = plt.specgram(signal,Fs=fs_rate)
-    # # plt.xlabel('Time')
-    # # plt.ylabel('Frequency')
-    # # plt.figure(2)
-    # plt.subplot(313)
-    # p4 = plt.plot(xFilter,filteredSignal,"g")
-    # plt.xlabel('dbs')
-    # plt.ylabel('Frequency')
-    #plt.show()
- """
 
 
 def getFrequencyTimePlot(samplingFrequency,signalData):
@@ -253,6 +167,31 @@ def butter_lowpass_filter(data, cutoff, fs, order=5):
     b, a = butter_lowpass(cutoff, fs, order=order)
     y = lfilter(b, a, data)
     return y
+
+
+def newModulation(signal,fs_rate,time,fZero):
+    plt.figure(1)
+    plt.subplot(311)    
+    #xCarrier, yCarrier = getCarrierFunction(time,fs_rate,fZero)
+    xCarrier, yCarrier = getCarrier(time, fs_rate, fZero)
+    plotSignalTime(yCarrier,xCarrier,"Amplitud vs t  Portadora",True)    
+    timeSignalArray = getSignalTime(8192,signal)
+    signalInterpolate = np.interp(xCarrier,timeSignalArray,signal)
+    print("Inretpolate "+str(len(signalInterpolate)))
+    #Se obtiene la señal modulada
+    modulateSignal = yCarrier*signalInterpolate
+    xFFt,yFFt = calcFFT(20000,modulateSignal)
+    plt.subplot(312)    
+    plotTransform(xFFt,yFFt,"Señal modulada")
+
+    #Demodulacion
+    plt.subplot(313)
+    demodulated = modulateSignal*yCarrier
+    xdemod,ydemod = calcFFT(20000,demodulated)
+    print("x0 => "+str(xdemod[0]))
+    print("xF => "+str(xdemod[len(xdemod)-1]))
+    plotTransform(xdemod,ydemod,"Señal modulada")
+    print("len signal => "+str(len(signal)))
 
 def modulation(signal,fs_rate,fZero):
     
@@ -296,17 +235,31 @@ def modulation(signal,fs_rate,fZero):
     yDemod = yMod*yCarrier
     demod = xMod,yDemod
     demodulation(carrier,demod,fs_rate,2)
+
+def getCarrier(time,  fs_rate, fZero):
     
+    # hz = c/s   .=>   
+    print("time => "+str(time))
+    print("fs_rate => "+str(fs_rate))
+    print("Time fs_rate +. "+str(time*fs_rate))
+    x = np.arange(0,time,1/fs_rate)
+    # x = np.linspace(0, time, num=time*fs_rate, endpoint=True)
+    y = np.cos(fZero*2*np.pi*x)
+    print("Y +. "+str(len(y)))
+    # f = interp1d(x, y)
+    # print("F => "+str(len(f) ))
+    return x,y
+
 
 def demodulation(carrier,demod,fs_rate,plotType):
 
-    y = butter_lowpass_filter(demod[1], 10000, fs_rate, order=5)    
+    y = butter_lowpass_filter(demod[1], 2000, fs_rate, order=5)    
     demodToPlot = demod[0],y
     plotCarrierAndModulizerFunctions(carrier,demodToPlot,fs_rate,plotType)
 
 
 
-def getCarrierFunction(time, samplesPerSec,fZero):
+def getCarrierExample(time, samplesPerSec,fZero):
     
     # time = np.arange(0,time,1.0/samplesPerSec)
     t = np.linspace(0, 2, 2 * samplesPerSec, endpoint=False)
@@ -314,14 +267,6 @@ def getCarrierFunction(time, samplesPerSec,fZero):
     #time = np.linspace(0,time,samplesPerSec*4*fZero,endpoint=False)
     return t,x
 
-def getCarrierWithAudio(time,  numSamples, fZero):
-    print("NumSamp/10 => "+str(numSamples/10))
-    x = np.linspace(0, 10, num=numSamples, endpoint=True)
-    y = np.cos(fZero*2*np.pi*x)
-    print("Y +. "+str(len(y)))
-    # f = interp1d(x, y)
-    # print("F => "+str(len(f) ))
-    return x,y
 
 def getSampleFunction(time,samplesPerSec,fZero):
     t = np.linspace(0, 2, 2 * samplesPerSec, endpoint=False)
