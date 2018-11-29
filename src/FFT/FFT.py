@@ -122,14 +122,13 @@ def plotSpec(signal,fs_rate,title):
 # Mostrar todas las gráficas 
 ####################################
 
-def graphics(fs_rate,signal):
+def graphics(fs_rate,signal, freq):
     
     ##Esta es una modulacion con una función coseno de ejemplo
     #Se obtiene: 
     #    portadora : coseno con frecuencia = f Hz
     #   moduladora: coseno con frecuencia = f/2 Hz
     # con una frecuencia determinada. 
-    freq = 20000
     #fs_rate = 4*freq #la frecuencia de muestreo debe ser al menos 4 la frecuencia (Por qué ? lo lei por ahi y funciona)
     modulation(signal,fs_rate,freq)
     plt.show()

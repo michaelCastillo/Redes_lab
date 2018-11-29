@@ -55,6 +55,9 @@ def fourierFile(fileName, text1, fButton2):
 def fourier():
     #Creacion de la ventana
     fourierWindow = Toplevel()
+    fourierWindow.geometry("500x500")    
+    fourierWindow.resizable(0,0)    
+    fourierWindow.title("Modulacion")    
     #Text
     text1=StringVar()
     text1.set("Archivo actual: Ninguno")
@@ -63,14 +66,16 @@ def fourier():
     Label(fourierWindow, textvariable=text1).grid(row=1, column=1)
     fileName = Entry(fourierWindow)
     fileName.grid(row=0, column=1)
-    
+    Label(fourierWindow, text="Frequencia de modulacion").grid(row=1)
+    frequency = Entry(fourierWindow)
+    frequency.grid(row=1, column=1)
     #Botones
     
     fourierButton2=Button(fourierWindow, state=DISABLED, text = "Calcular transformada y graficar", 
-        command = lambda: FFT.graphics(fs_rate, signal))
-    fourierButton2.grid(row=2, column=1, sticky=W, pady=4)
+        command = lambda: FFT.graphics(fs_rate, signal, int(frequency.get())))
+    fourierButton2.grid(row=3, column=1, sticky=W, pady=4)
     Button(fourierWindow, text = "Abrir archivo", 
-        command = lambda: fourierFile(fileName, text1, fourierButton2)).grid(row=1, column=0, sticky=W, pady=4)
+        command = lambda: fourierFile(fileName, text1, fourierButton2)).grid(row=2, column=0, sticky=W, pady=4)
 
 
 master = Tk()
