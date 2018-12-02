@@ -2,6 +2,7 @@ from __future__ import print_function
 #import scipy.io.wavfile as wavfile
 import scipy
 from scipy.signal import butter, lfilter, firwin
+from scipy import integrate
 #Ifrom scipy import fftpack
 import numpy as np
 from matplotlib import pyplot as plt
@@ -123,7 +124,7 @@ def plotSpec(signal,fs_rate,title):
 ####################################
 # Mostrar todas las gráficas 
 ####################################
-def fmModulation(fs_rate, signal, freq, flag):
+def fmModulationFail(fs_rate, signal, freq, flag):
     #Eje x para la señal
     timeSignalArray = getSignalTime(8192,signal)
     ##
@@ -195,9 +196,9 @@ def amModulation(fs_rate,signal, freq, flag):
     #fs_rate = 4*freq #la frecuencia de muestreo debe ser al menos 4 la frecuencia (Por qué ? lo lei por ahi y funciona)
     time =  float(len(signal))/float(fs_rate)
     print("TIME => "+str(time))
-    fs_rate = 4*freq  #Para que se cumpla el teorema de nyquist.
+    fs_rate_modulation = 4*freq  #Para que se cumpla el teorema de nyquist.
 
-    newModulation(signal,fs_rate,time,freq)
+    newModulation(signal,fs_rate,fs_rate_modulation,time,freq)
     plt.show()
 
 
@@ -229,9 +230,9 @@ def butter_lowpass_filter(data, cutoff, fs, order=5):
     return y
 
 
-def newModulation(signal,fs_rate,time,fZero):
+def newModulation(signal,fsRateOriginal,fsRateModulation,time,fZero):
     #Eje x para la señal
-    timeSignalArray = getSignalTime(8192,signal)
+    timeSignalArray = getSignalTime(fsRateOriginal,signal)
     ##
     #Señal original    
     ##
@@ -247,39 +248,128 @@ def newModulation(signal,fs_rate,time,fZero):
     ##
     plt.figure(2)
     plt.subplot(311)    
-    #xCarrier, yCarrier = getCarrierFunction(time,fs_rate,fZero)
-    xCarrier, yCarrier = getCarrier(time, fs_rate, fZero)
+    #xCarrier, yCarrier = getCarrierFunction(time,fsRateModulation,fZero)
+    
+    #Si la frecuencia de muestreo obtenida desde la carrier es menor entonces, se deja
+    # aquella que sea más alta con el fin de no interpolar hacia abajo la señal para que
+    # no pierda presición. 
+    interpolate = True
+    if(fsRateModulation < fsRateOriginal):
+        fsRateModulation = fsRateOriginal
+        interpolate = False
+    
+    xCarrier, yCarrier = getCarrier(time, fsRateModulation, fZero)
     plotSignalTime(yCarrier,xCarrier,"Señal portadora",False)    
-    xCarryFFt,yCarryFFt = calcFFT(fs_rate,yCarrier)
+    xCarryFFt,yCarryFFt = calcFFT(fsRateModulation,yCarrier)
     plt.subplot(312)        
     plotTransform(xCarryFFt,yCarryFFt,"Señal portadora")
-    
-    ##
-    #Modulacion
-    ##
+    print("Len Signal =>  "+str(len(signal)))
+    print("Len Carrier =>  "+str(len(yCarrier)))
+
+    ########################
+    #######  Modulación  ########
+    ########################
+    #Interpolación
     plt.figure(3)
-    signalInterpolate = np.interp(xCarrier,timeSignalArray,signal)
-    print("Inretpolate "+str(len(signalInterpolate)))
-    plt.subplot(311)
-    plotSignalTime(signalInterpolate,xCarrier,"Señal original interpolada",True)    
-    modulateSignal = yCarrier*signalInterpolate
-    xFFt,yFFt = calcFFT(fs_rate,modulateSignal)
-    plt.subplot(312)    
-    plotTransform(xFFt,yFFt,"Señal modulada")
-    ##
-    #Demodulacion
-    ##
+    if(interpolate):
+        signalInterpolate = np.interp(xCarrier,timeSignalArray,signal)
+        print("Inretpolate "+str(len(signalInterpolate)))
+        plt.subplot(311)
+        plotSignalTime(signalInterpolate,xCarrier,"Señal original interpolada",False)    
+        #Modulación
+        modulateSignal = yCarrier*signalInterpolate
+        xFFt,yFFt = calcFFT(fsRateModulation,modulateSignal)
+        plt.subplot(312)    
+        plotTransform(xFFt,yFFt,"Señal modulada")
+    else:
+        #Modulación
+        modulateSignal = yCarrier*signal
+        xFFt,yFFt = calcFFT(fsRateModulation,modulateSignal)
+        plt.subplot(312)    
+        plotTransform(xFFt,yFFt,"Señal modulada")
+
+
+    ##########################
+    #######  Demodulación  ########
+    ##########################
     plt.figure(4)
     demodulated = modulateSignal*yCarrier
-    xdemod,ydemod = calcFFT(fZero,demodulated)
+    demodulated = butter_lowpass_filter( demodulated,5000,fsRateModulation)
+    xdemod,ydemod = calcFFT(fsRateModulation,demodulated)
+    ydemod = ydemod*2
     plotSignalTime(xdemod,ydemod,"Señal demodulada",False)        
     plt.subplot(312)
-    print("x0 => "+str(xdemod[0]))
-    print("xF => "+str(xdemod[len(xdemod)-1]))
-    plt.subplot(312)
-    plotTransform(xdemod,ydemod,"Señal demodulada")
-    print("len signal => "+str(len(signal)))
+    
+    ##Señal inversa, para obtener la señal en el tiempo
+    plt.subplot(311)
+    inverse = invTransform(ydemod,len(xdemod))
+    plotSignalTime(inverse,xCarrier,"Señal original",False)    
 
+    ##########################
+    #####   Modulación FM   #########
+    ##########################
+    
+    #Versión simplificada
+    plt.figure(5)
+    xSample,ySample = getCarrier(0.1,20000,200)
+    plt.subplot(311)
+    plotSignalTime(ySample,xSample,"Moduladora Ejemplo",False)
+    fmDataSample = fmModulation(ySample,xSample,20000,1000,0.1)
+    plt.subplot(312)
+    plotSignalTime(fmDataSample,xSample,"Señal FM",False)
+    xfft_fmSample, yfft_fmSample  = calcFFT(20000,fmDataSample)
+    plt.subplot(313)
+    plotTransform(xfft_fmSample,yfft_fmSample,"Transformada FM")
+    #Version completa
+    plt.figure(6)
+
+    fmData = fmModulation(signal,xCarrier,fsRateModulation,fZero,time)
+    print("FM => ")
+    print(str(fmData))
+    plt.subplot(311)
+    plotSignalTime(fmData,xCarrier,"Señal FM",False)
+
+    #Transformada de fourier de la señal en FM
+    xfft_fm, yfft_fm  = calcFFT(fsRateModulation,fmData)
+    plt.subplot(312)
+    plotTransform(xfft_fm,yfft_fm,"Transformada FM")
+    
+
+
+
+# OBTENER UNA PORTADORA ADECUADA
+def getCarrier(time, fs_rate, fZero):
+    # hz = c/s   .=>
+    print("time => " + str(time))
+    print("fs_rate => " + str(fs_rate))
+    print("Time fs_rate +. " + str(time * fs_rate))
+    x = np.arange(0, time, 1 / fs_rate)
+    # x = np.linspace(0, time, num=time*fs_rate, endpoint=True)
+    y = np.cos(fZero * 2 * np.pi * x)
+    print("Y +. " + str(len(y)))
+    # f = interp1d(x, y)
+    # print("F => "+str(len(f) ))
+    return x, y
+
+def getCarrierSin(time, fs_rate, fZero):
+    # hz = c/s   .=>
+    print("time => " + str(time))
+    print("fs_rate => " + str(fs_rate))
+    print("Time fs_rate +. " + str(time * fs_rate))
+    x = np.arange(0, time, 1 / fs_rate)
+    # x = np.linspace(0, time, num=time*fs_rate, endpoint=True)
+    y = np.sin(fZero * 2 * np.pi * x)
+    print("Y +. " + str(len(y)))
+    # f = interp1d(x, y)
+    # print("F => "+str(len(f) ))
+    return x, y
+
+def fmModulation(signal,x,fs_rate,fZero,time):
+    acumIntegral = 100*integrate.cumtrapz(signal, x, initial=0)
+    x = np.arange(0, time, 1 / fs_rate)
+    # x = np.linspace(0, time, num=time*fs_rate, endpoint=True)
+    y = np.cos(fZero * 2 * np.pi * x + acumIntegral)
+    return y
 def modulation(signal,fs_rate,fZero):
     
     #Se tienen que tener la misma cantidad de datos para poder multiplicar  
@@ -320,20 +410,6 @@ def modulation(signal,fs_rate,fZero):
     demod = xMod, yDemod
     demodulation(carrier, demod, fs_rate, 2)
 
-# OBTENER UNA PORTADORA ADECUADA
-def getCarrier(time, fs_rate, fZero):
-    # hz = c/s   .=>
-    print("time => " + str(time))
-    print("fs_rate => " + str(fs_rate))
-    print("Time fs_rate +. " + str(time * fs_rate))
-    x = np.arange(0, time, 1 / fs_rate)
-    # x = np.linspace(0, time, num=time*fs_rate, endpoint=True)
-    y = np.cos(fZero * 2 * np.pi * x)
-    print("Y +. " + str(len(y)))
-    # f = interp1d(x, y)
-    # print("F => "+str(len(f) ))
-    return x, y
-
 # SE REALIZA UN FILTRO PASO BAJO A LA DEMODULACION
 def demodulation(carrier, demod, fs_rate, plotType):
     #Filtro paso bajo
@@ -341,17 +417,8 @@ def demodulation(carrier, demod, fs_rate, plotType):
     demodToPlot = demod[0], y
     plotCarrierAndModulizerFunctions(carrier, demodToPlot, fs_rate, plotType)
 
-
-#def getCarrierExample(time, samplesPerSec, fZero):
-    # time = np.arange(0,time,1.0/samplesPerSec)
-#    t = np.linspace(0, 2, 2 * samplesPerSec, endpoint=False)
-#    x = np.sin(fZero * 2 * np.pi * t)
-    # time = np.linspace(0,time,samplesPerSec*4*fZero,endpoint=False)
-#    return t, x
-
-
 def getSampleFunction(time, samplesPerSec, fZero):
-    t = np.linspace(0, 2, 2 * samplesPerSec, endpoint=False)
+    t = np.linspace(0, 0.1, 2 * samplesPerSec, endpoint=False)
     fZero = fZero / 2
     x = np.sin(fZero * 2 * np.pi * t)
     return t, x
