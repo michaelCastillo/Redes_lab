@@ -39,18 +39,20 @@ def record():
     Button(recordWindow, text = "Comenzar grabación", command = lambda: recordButtonAux(fileNameRecord.get(), int(recordSeconds.get()), text1)).grid(row=2,column=0, sticky=W, pady=4)
     Button(recordWindow, text = "Atrás", command = recordWindow.destroy).grid(row=2,column=1, sticky=W, pady=4)
 
-def fourierFile(fileName, text1, fButton2):
+def fourierFile(fileName, text1, fButton2, fButton3):
     arrayAux = fileDirector.openWav(fileName.get())
     global fs_rate 
     global signal
     if(len(arrayAux)==0):
         messagebox.showinfo("Error", "Archivo de entrada no existe")
         fButton2['state']='disabled'
+        fButton3['state']='disabled'
     else:
         fs_rate=arrayAux[0]
         signal=arrayAux[1]
         text1.set("Archivo actual: "+fileName.get()+".wav")    
         fButton2['state']='normal'
+        fButton3['state']='normal'
 
 def fourier():
     #Creacion de la ventana
@@ -63,14 +65,20 @@ def fourier():
     Label(fourierWindow, textvariable=text1).grid(row=1, column=1)
     fileName = Entry(fourierWindow)
     fileName.grid(row=0, column=1)
-    
+    Label(fourierWindow, text="Frequencia a modular: ").grid(row=1)
+    freq = Entry(fourierWindow)
+    freq.grid(row=1, column=1)
+    var1 = IntVar()
+    Checkbutton(fourierWindow, text="Utilizar coseno como señal", variable=var1).grid(row=3, sticky=W)
+    fourierButton2=Button(fourierWindow, state=DISABLED, text = "Modulacion AM", 
     #Botones
-    
-    fourierButton2=Button(fourierWindow, state=DISABLED, text = "Calcular transformada y graficar", 
-        command = lambda: FFT.graphics(fs_rate, signal))
-    fourierButton2.grid(row=2, column=1, sticky=W, pady=4)
+        command = lambda: FFT.amModulation(fs_rate, signal, int(freq.get()),var1.get()))
+    fourierButton2.grid(row=4, column=0, sticky=W, pady=4)
+    fourierButton3=Button(fourierWindow, state=DISABLED, text = "Modulacion FM", 
+        command = lambda: FFT.fmModulation(fs_rate, signal, int(freq.get()), var1.get()))
+    fourierButton3.grid(row=4, column=1, sticky=W, pady=4)    
     Button(fourierWindow, text = "Abrir archivo", 
-        command = lambda: fourierFile(fileName, text1, fourierButton2)).grid(row=1, column=0, sticky=W, pady=4)
+        command = lambda: fourierFile(fileName, text1, fourierButton2, fourierButton3)).grid(row=2, column=0, sticky=W, pady=4)
 
 
 master = Tk()
