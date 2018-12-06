@@ -324,7 +324,7 @@ def newModulation(signal,fsRateOriginal,fsRateModulation,time,fZero):
     xfft_fmSample, yfft_fmSample  = calcFFT(20000,fmDataSample)
     plt.subplot(313)
     plotTransform(xfft_fmSample,yfft_fmSample,"Transformada FM")
-    
+    """
     #Version completa
     plt.figure(6)
 
@@ -339,7 +339,7 @@ def newModulation(signal,fsRateOriginal,fsRateModulation,time,fZero):
     xfft_fm, yfft_fm  = calcFFT(fsRateModulation,fmData)
     plt.subplot(312)
     plotTransform(xfft_fm,yfft_fm,"Transformada FM")
-    
+    """
 
 
 
