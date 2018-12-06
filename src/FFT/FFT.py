@@ -297,31 +297,37 @@ def newModulation(signal,fsRateOriginal,fsRateModulation,time,fZero):
     demodulated = butter_lowpass_filter( demodulated,5000,fsRateModulation)
     xdemod,ydemod = calcFFT(fsRateModulation,demodulated)
     ydemod = ydemod*2
-    plotSignalTime(xdemod,ydemod,"Señal demodulada",False)        
     plt.subplot(312)
+    plotTransform(xdemod,ydemod,"Señal demodulada")        
     
     ##Señal inversa, para obtener la señal en el tiempo
     plt.subplot(311)
     inverse = invTransform(ydemod,len(xdemod))
-    plotSignalTime(inverse,xCarrier,"Señal original",False)    
+    plotSignalTime(inverse,xCarrier,"Señal Demodulada (con inversa) ",False)    
 
     ##########################
     #####   Modulación FM   #########
     ##########################
+
+
+
+
     
     #Versión simplificada
     plt.figure(5)
-    xSample,ySample = getCarrier(0.1,20000,200)
+    xSample,ySample = getCarrier(0.01,20000,200)
     plt.subplot(311)
     plotSignalTime(ySample,xSample,"Moduladora Ejemplo",False)
-    fmDataSample = fmModulation(ySample,xSample,20000,1000,0.1)
+    fmDataSample = fmModulation(ySample,xSample,20000,5000,0.01)
     plt.subplot(312)
-    plotSignalTime(fmDataSample,xSample,"Señal FM",False)
+    plotSignalTime(fmDataSample,xSample,"Señal FM Ejemplo",False)
     xfft_fmSample, yfft_fmSample  = calcFFT(20000,fmDataSample)
     plt.subplot(313)
     plotTransform(xfft_fmSample,yfft_fmSample,"Transformada FM")
+    
     #Version completa
     plt.figure(6)
+
 
     fmData = fmModulation(signal,xCarrier,fsRateModulation,fZero,time)
     print("FM => ")
@@ -365,10 +371,21 @@ def getCarrierSin(time, fs_rate, fZero):
     return x, y
 
 def fmModulation(signal,x,fs_rate,fZero,time):
-    acumIntegral = 100*integrate.cumtrapz(signal, x, initial=0)
+    print("Len signal =>  " + str(len(signal)) + "   len(x) =>   "+str(len(x)))
+
+
+
+    acumIntegral = 100*integrate.cumtrapz(x,signal , initial=0)
+    print("Integral acumulada => "+str(acumIntegral))
+    print("LEN acumulada => "+str(len(acumIntegral)))
     x = np.arange(0, time, 1 / fs_rate)
     # x = np.linspace(0, time, num=time*fs_rate, endpoint=True)
-    y = np.cos(fZero * 2 * np.pi * x + acumIntegral)
+    y = []
+    for i in range(len(acumIntegral)):
+        print("I: "+str(i))
+        y.append(np.cos(fZero * 2 * np.pi * x[i] + acumIntegral[i]) )
+    #y = np.cos(fZero * 2 * np.pi * x + acumIntegral)
+    print("len y => "+str(y))
     return y
 def modulation(signal,fs_rate,fZero):
     
