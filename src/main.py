@@ -75,7 +75,7 @@ def fourier():
         command = lambda: FFT.amModulation(fs_rate, signal, int(freq.get()),var1.get()))
     fourierButton2.grid(row=4, column=0, sticky=W, pady=4)
     fourierButton3=Button(fourierWindow, state=DISABLED, text = "Modulacion FM", 
-        command = lambda: FFT.fmModulation(fs_rate, signal, int(freq.get()), var1.get()))
+        command = lambda: FFT.fmModulationFail(fs_rate, signal, int(freq.get()), var1.get()))
     fourierButton3.grid(row=4, column=1, sticky=W, pady=4)    
     Button(fourierWindow, text = "Abrir archivo", 
         command = lambda: fourierFile(fileName, text1, fourierButton2, fourierButton3)).grid(row=2, column=0, sticky=W, pady=4)
