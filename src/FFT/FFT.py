@@ -212,16 +212,16 @@ def fmModulationFail(fs_rate, signal, freq, flag):
     
     plotTransform(xOriFFt,yOriFFt,"Señal original")
 
-    x_signal_2 = np.linspace(0, time, freq*time)
+    x_signal_2 = np.linspace(0, time, fs_rate*5*time)
     y_signal_2 = np.interp(x_signal_2, timeSignalArray, signal)
     integral = integrate.cumtrapz(y_signal_2, x_signal_2, initial=0)
 
-    xCarrier, yCarrier = getCarrier(time, fs_rate, freq)
-    product = np.zeros_like(signal, dtype=float)
-    signalIntegrate=np.cumsum(signal)
+    portadoraX=np.linspace(0,fs_rate*5, fs_rate*5*time)
+    
+    señal_portadora = np.cos(freq*np.pi*portadoraX)
     w = fs_rate * x_signal_2
 
-    product = (np.cos(w*np.pi+integral*np.pi))
+    product = (np.cos(w*np.pi+integral))
     plt.subplot(3, 1, 1)
 
     
@@ -231,8 +231,8 @@ def fmModulationFail(fs_rate, signal, freq, flag):
     plt.subplot(311)    
     plt.ylabel('Amplitud')
     plt.xlabel('Señal Portadora')
-    plotSignalTime(yCarrier,xCarrier,"Señal portadora",False)    
-    xCarryFFt,yCarryFFt = calcFFT(freq,yCarrier)
+    plotSignalTime(señal_portadora,portadoraX,"Señal portadora",False)    
+    xCarryFFt,yCarryFFt = calcFFT(freq,señal_portadora)
 
     plt.subplot(312)        
     plotTransform(xCarryFFt,yCarryFFt,"Señal portadora")
