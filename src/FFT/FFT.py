@@ -6,7 +6,7 @@ from scipy import integrate, fft
 #Ifrom scipy import fftpack
 import numpy as np
 from matplotlib import pyplot as plt
-#from scipy.interpolate import interp1d
+from scipy.interpolate import interp1d
 
 #CALCULO DE LA TRANSFORMADA DE FOURIER
 def calcFFT(fs_rate, signal):
@@ -129,6 +129,9 @@ def plotSpec(signal,fs_rate,title):
 
 
 def fmModulationFail(fs_rate, signal, freq, flag):
+    timeSignalArray = getSignalTime(fs_rate,signal)
+    time =  float(len(signal))/float(fs_rate)
+
     """
     time =  float(len(signal))/float(fs_rate)
     timeSignalArray = getSignalTime(fs_rate,signal)
@@ -139,6 +142,7 @@ def fmModulationFail(fs_rate, signal, freq, flag):
     plt.figure(4)
     plotTransform(xFFT,yFFT,"Señal modulada FM")
     plt.show()
+    """
     """
     fm = fs_rate/2
     fc = 7*fm
@@ -185,11 +189,30 @@ def fmModulationFail(fs_rate, signal, freq, flag):
     plotTransform(xCarrier_t,yCarrier_t,"Transformada portadora")
 
     print(str(xCarrier))
+    """
     ######### Modulacion ##########
-    
-    fm = fs_rate/2
-    fc = 5*fm
+    interp = interp1d(timeSignalArray, signal)
+    timeWithNewRate = np.linspace(0, len(signal) / fs_rate,len(signal) * 10)
+    dataInterpolated = interp(timeWithNewRate)
+    lenDataInterpolated = len(timeWithNewRate)
+    arrayTimeCarrier = np.linspace(0, len(signal) / fs_rate, lenDataInterpolated)
+    newFrequency = fs_rate
+    w = newFrequency*arrayTimeCarrier
+    k=3 #solo al tanteo, puede ser cambiado; preguntarle al profe.
+    integral = integrate.cumtrapz(dataInterpolated, arrayTimeCarrier, initial=0)
+    modulatedSignal = np.cos(2*np.pi * w + k * integral)
 
+    plt.figure(3)
+    plt.subplot(3,1,1)
+    plotSignalTime(signal[int(len(signal)/4):int(len(signal)/4) + 1000],timeSignalArray[int(len(signal)/4):int(len(signal)/4) + 1000],"Señal original",False)    
+    plt.subplot(3,1,2)
+    plotSignalTime(modulatedSignal[int(len(signal)/4):int(len(signal)/4) + 1000],timeWithNewRate[int(len(signal)/4):int(len(signal)/4) + 1000],"Señal modulata dec vs Tiempo",False)
+
+    #Se obtiene la transformada de la modulacion FM
+    xModFFT, yModFFT = calcFFT(newFrequency,modulatedSignal)
+    plt.subplot(3,1,3)
+    plotTransform(xModFFT,yModFFT,"Transformada Modulacion FM")
+    """
     xToModulate = np.linspace(0,time,fc*time)
     yToModulate  = np.interp(xToModulate, timeSignalArray,signal)
     
@@ -207,7 +230,7 @@ def fmModulationFail(fs_rate, signal, freq, flag):
     xModFFT, yModFFT = calcFFT(fsRateModulation,product)
     plt.subplot(3,1,2)
     plotTransform(xModFFT,yModFFT,"Transformada Modulacion FM")
-
+"""
     plt.show()
     
 
