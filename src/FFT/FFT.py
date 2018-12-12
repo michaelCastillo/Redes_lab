@@ -126,131 +126,133 @@ def plotSpec(signal,fs_rate,title):
 ####################################
 # Mostrar todas las gráficas 
 ####################################
+
+
 def fmModulationFail(fs_rate, signal, freq, flag):
     """
-    fCos = 20
-    fsRateModulation = freq
-    fsRateOriginal = fs_rate
-
-
-    timeSignalArray = getSignalTime(fsRateOriginal, signal)
-    if(flag == 1):
-        timeSignalArray = np.arange(44100.0) / 44100.0
-        fsRateOriginal = fCos
-        fs_rate=fCos
-        signal = np.cos(fCos * np.pi * timeSignalArray)
     time =  float(len(signal))/float(fs_rate)
-    xCarrier, yCarrier = getCarrier(time, fs_rate, freq)
-    fm = fs_rate/2
-    fc = 30000
-    wc = 2*np.pi
-    rate_signal_2 = fc * time
-    x_signal_2 = np.linspace(0, time, fc*time)
-    y_signal_2 = np.interp(x_signal_2, timeSignalArray, signal)
-
-    A = 1
-
-
-    integral = integrate.cumtrapz(y_signal_2, x_signal_2, initial=0)
-    w = fm * x_signal_2
-    y_modulada= A*(np.cos(w*np.pi+integral*np.pi))
-    plt.figure(1)
-    plt.subplot(311)
-    plotSignalTime(signal,timeSignalArray,"Señal original",False)   
-    xFFt,yFFt = calcFFT(fs_rate,signal)
-    plt.subplot(312)
-    plotTransform(xFFt,yFFt,"Señal original")
-
-    plt.figure(2)
-    plt.subplot(311)
-    plotSignalTime(xCarrier,yCarrier,"Señal Portadora",False) 
-    xFFt,yFFt = calcFFT(freq,yCarrier)
-    plt.subplot(312)
-    plotTransform(xFFt,yFFt,"Señal portadora")
+    timeSignalArray = getSignalTime(fs_rate,signal)
     
-    plt.figure(3)
-    plt.subplot(311)
-    plotSignalTime(y_modulada,x_signal_2,"Señal modulada",False)    
-    xFFt,yFFt = calcFFT(w*np.pi,y_modulada)
-    plt.subplot(312)
-    plotTransform(xFFt,yFFt,"Señal modulada")
-"""
-    #Eje x para la señal
-    ##
-    #Señal original    
-    ##
-    #plt.figure(1)
-    #plt.subplot(311)        
-    #plotSignalTime(signal,timeSignalArray,"Señal original",True)    
-    #xOriFFt,yOriFFt = calcFFT(freq,signal)
-    #plt.subplot(312)        
-    #plotTransform(xOriFFt,yOriFFt,"Señal original")
+    modFM , xFM = modulacion_FM(signal,len(signal),timeSignalArray,fs_rate,100,freq)
 
-
-    #time =  float(len(signal))/float(fs_rate)
-    #print("TIME => "+str(time))
-    #fs_rate_modulation = 4*freq  #Para que se cumpla el teorema de nyquist.
-
-    #newModulation(signal,fs_rate,fs_rate_modulation,time,freq)
-    #plt.show()
-
-    fCos=10
-    timeSignalArray = getSignalTime(fs_rate, signal)    
-    time =  float(len(signal))/float(fs_rate)    
-    if(flag==1):
-        fs_rate=fCos
-        time = 5
-        timeSignalArray, signal = getCarrier(time, 100, fCos)
-    fsRateModulation=freq*4
-
-    #Original
+    xFFT, yFFT = calcFFT(fs_rate,modFM)
+    plt.figure(4)
+    plotTransform(xFFT,yFFT,"Señal modulada FM")
+    plt.show()
+    """
+    fm = fs_rate/2
+    fc = 7*fm
+    #Se establecen las frecuencias de muestreo
+    time =  float(len(signal))/float(fs_rate)
+    fsRateOriginal = fs_rate
+    fsRateModulation = freq * 4
+    #Se obtiene la señal original
+    timeSignalArray = getSignalTime(fsRateOriginal,signal)
+    #Se grafica la señal original
     plt.figure(1)
     plt.subplot(311)        
-    plotSignalTime(signal,timeSignalArray,"Señal original",False)    
-    xOriFFt,yOriFFt = calcFFT(fs_rate,signal)
-    plt.subplot(312)
-    
+    #Se grafica la señal dec vs tiempo
+    plotSignalTime(signal[:200],timeSignalArray[:200],"Señal original",False)    
+    #Se obtiene la transformada de la señal
+    xOriFFt,yOriFFt = calcFFT(fsRateOriginal,signal)
+    plt.subplot(312)        
     plotTransform(xOriFFt,yOriFFt,"Señal original")
 
-    x_signal_2 = np.linspace(0, time, fs_rate*5*time)
-    y_signal_2 = np.interp(x_signal_2, timeSignalArray, signal)
-    integral = integrate.cumtrapz(y_signal_2, x_signal_2, initial=0)
 
-    portadoraX=np.linspace(0,fs_rate*5, fs_rate*5*time)
-    
-    señal_portadora = np.cos(freq*np.pi*portadoraX)
-    w = fs_rate * x_signal_2
+    #Si la frecuencia de muestreo obtenida desde la carrier es menor entonces, se deja
+    # aquella que sea más alta con el fin de no interpolar hacia abajo la señal para que
+    # no pierda presición. 
+    interpolate = True
+    if(fsRateModulation < fsRateOriginal):
+        fsRateModulation = fsRateOriginal
+        interpolate = False
 
-    product = (np.cos(w*np.pi+integral))
-    plt.subplot(3, 1, 1)
-
-    
-    
-    #Portadora
+    print("########### Portadora ############")
+    print("fsRateOriginal => "+str(fsRateOriginal))
+    print("fsRateModulation => "+str(fsRateModulation))
+    print("Time => "+str(time))
     plt.figure(2)
-    plt.subplot(311)    
-    plt.ylabel('Amplitud')
-    plt.xlabel('Señal Portadora')
-    plotSignalTime(señal_portadora,portadoraX,"Señal portadora",False)    
-    xCarryFFt,yCarryFFt = calcFFT(freq,señal_portadora)
+    plt.subplot(3,1,1)
+    #Se grafica la portadora en tiempo
+    xCarrier,yCarrier = getCarrier(time,fsRateModulation,fc)
+    plotSignalTime(yCarrier[:500],xCarrier[:500],"Señal portadora",False)
+    print("############# LENS #############")
+    print("Len xSignal => "+str(len(timeSignalArray)))
+    print("Len xCarrier => "+str(len(xCarrier)))
+    plt.subplot(3,1,2)
+    #Se grafica la portadora en transformada
+    xCarrier_t, yCarrier_t = calcFFT(fsRateModulation,yCarrier)
+    plotTransform(xCarrier_t,yCarrier_t,"Transformada portadora")
 
-    plt.subplot(312)        
-    plotTransform(xCarryFFt,yCarryFFt,"Señal portadora")
+    print(str(xCarrier))
+    ######### Modulacion ##########
+    
+    fm = fs_rate/2
+    fc = 5*fm
+
+    xToModulate = np.linspace(0,time,fc*time)
+    yToModulate  = np.interp(xToModulate, timeSignalArray,signal)
+    
+    integral = integrate.cumtrapz(yToModulate, xToModulate, initial=0)
+    w = fm*xToModulate
+    KK=1
+    product = np.cos(w*2*np.pi+KK*integral)
+
+    #Se grafica la modulacion
+    plt.figure(3)
+    plt.subplot(3,1,1)
+    plotSignalTime(product[:500],xToModulate[:500],"Señal modulata dec vs Tiempo",False)
+
+    #Se obtiene la transformada de la modulacion FM
+    xModFFT, yModFFT = calcFFT(fsRateModulation,product)
+    plt.subplot(3,1,2)
+    plotTransform(xModFFT,yModFFT,"Transformada Modulacion FM")
+
+    plt.show()
     
 
-    #Modulacion
-    plt.figure(3)
-    plt.subplot(311)    
-    plt.ylabel('Amplitud')
-    plt.xlabel('Señal Modulada')
-    plt.plot(product)
-   
-    xCarryFFt,yCarryFFt = calcFFT(fs_rate*np.pi,product)
-    plt.subplot(312)        
-    plotTransform(xCarryFFt,yCarryFFt,"Señal modulada")
-    plt.show()
+    
+def modulacion_FM(señal,largo_señal,x,rate,K,freq):
+    
+    KK = K/100
+    fm=rate/2 #se requiere la mitad de la frecuencia dada por la funcion "read" para obtener la frecuencia de muestreo
+    fc=5*freq#se requiere una frecuencia portadora minimo 4 veces mayor que la frecuencia de muestreo
+    wc=2*np.pi
+    
+    tiempo = float(largo_señal)/float(rate)#genero el tiempo del audio 
+    #genero un vector de 0 hasta tiempo con intervalos del porte de la frecuencia
+    x2 = np.linspace(0,tiempo,fc*tiempo)
+    señal2=np.interp(x2, x,señal)
+    
+    
+    A=1
+    
+    portadoraX=np.linspace(0,fc, fc*tiempo)
+    
+    señal_portadora = np.cos(wc*portadoraX)
+    
+    plt.figure(1)
+    plt.subplot(311)
+    xfft,yfft = calcFFT(rate,señal_portadora)
+    plotTransform(xfft,yfft,"Portadora Transf")
 
-
+    integral= integrate.cumtrapz(señal2,x2, initial=0)
+    w= fm * x2
+    señal_modulada=A*(np.cos(w*np.pi+KK*integral*np.pi))#por que se agrega un pi?
+    
+    plt.figure(2)
+    plt.subplot(311)
+    plt.title("Señal del Audio")
+    plt.plot(x2,señal2,linewidth=0.4)
+    plt.subplot(312)
+    plt.title("Señal Portadora")
+    plt.plot(portadoraX[:600],señal_portadora[:600],linewidth=0.4)
+    plt.subplot(313)
+    plt.title("Modulación FM "+str(K)+" %")
+    plt.plot(x2,señal_modulada,linewidth=0.4)
+    
+    return señal_modulada,x2
+    
 def amModulation(fs_rate,signal, freq, flag):
     
     ##Esta es una modulacion con una función coseno de ejemplo
@@ -358,7 +360,7 @@ def newModulation(signal,fsRateOriginal,fsRateModulation,time,fZero):
     ##########################
     #######  Demodulación  ########
     ##########################
-    """
+    
     plt.figure(4)
     demodulated = modulateSignal*yCarrier
     demodulated = butter_lowpass_filter( demodulated,5000,fsRateModulation)
@@ -371,39 +373,6 @@ def newModulation(signal,fsRateOriginal,fsRateModulation,time,fZero):
     plt.subplot(311)
     inverse = invTransform(ydemod,len(xdemod))
     plotSignalTime(inverse,xCarrier,"Señal original",False)    
-"""
-    ##########################
-    #####   Modulación FM   #########
-    ##########################
-    
-    #Versión simplificada
-    plt.figure(5)
-    xSample,ySample = getCarrier(0.1,20000,200)
-    plt.subplot(311)
-    plotSignalTime(ySample,xSample,"Moduladora Ejemplo",False)
-    fmDataSample = fmModulation(ySample,xSample,20000,1000,0.1)
-    plt.subplot(312)
-    plotSignalTime(fmDataSample,xSample,"Señal FM",False)
-    xfft_fmSample, yfft_fmSample  = calcFFT(20000,fmDataSample)
-    plt.subplot(313)
-    plotTransform(xfft_fmSample,yfft_fmSample,"FM")
-    
-    #Version completa
-    plt.figure(6)
-
-    fmData = fmModulation(signal,xCarrier,fsRateModulation,fZero,time)
-    print("FM => ")
-    print(str(fmData))
-    plt.subplot(311)
-    plotSignalTime(fmData,xCarrier,"Señal FM",False)
-
-    #Transformada de fourier de la señal en FM
-    xfft_fm, yfft_fm  = calcFFT(fsRateModulation,fmData)
-    plt.subplot(312)
-    plotTransform(xfft_fm,yfft_fm,"FM")
-    
-
-
 
 # OBTENER UNA PORTADORA ADECUADA
 def getCarrier(time, fs_rate, fZero):
