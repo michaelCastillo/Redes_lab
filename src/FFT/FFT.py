@@ -388,14 +388,14 @@ def newModulation(signal,fsRateOriginal,fsRateModulation,time,fZero):
     demodulated = modulateSignal*yCarrier
     demodulated = butter_lowpass_filter( demodulated,5000,fsRateModulation)
     xdemod,ydemod = calcFFT(fsRateModulation,demodulated)
-    ydemod = ydemod*2
-    plotSignalTime(xdemod,ydemod,"Señal demodulada",False)        
     plt.subplot(312)
+    plotTransform(xdemod,ydemod,"Señal demodulada")        
+    ydemod = ydemod*2
     
     ##Señal inversa, para obtener la señal en el tiempo
     plt.subplot(311)
     inverse = invTransform(ydemod,len(xdemod))
-    plotSignalTime(inverse,xCarrier,"Señal original",False)    
+    plotSignalTime(inverse,xCarrier,"Señal demodulada",False)    
 
 # OBTENER UNA PORTADORA ADECUADA
 def getCarrier(time, fs_rate, fZero):

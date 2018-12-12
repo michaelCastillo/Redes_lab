@@ -5,6 +5,8 @@ sys.path.insert(0, 'SoundInterface')
 import SoundIn as sin
 sys.path.insert(0, 'FFT')
 import FFT
+sys.path.insert(0, 'modulation')
+import DigitalModulation
 import threading
 from scipy.io import wavfile
 from tkinter import *
@@ -38,7 +40,18 @@ def record():
     #Botones
     Button(recordWindow, text = "Comenzar grabación", command = lambda: recordButtonAux(fileNameRecord.get(), int(recordSeconds.get()), text1)).grid(row=2,column=0, sticky=W, pady=4)
     Button(recordWindow, text = "Atrás", command = recordWindow.destroy).grid(row=2,column=1, sticky=W, pady=4)
-
+def digitalModulationFile(fileName, text1, fButton2):
+    arrayAux = fileDirector.openWav(fileName.get())
+    global fs_rate 
+    global signal
+    if(len(arrayAux)==0):
+        messagebox.showinfo("Error", "Archivo de entrada no existe")
+        fButton2['state']='disabled'
+    else:
+        fs_rate=arrayAux[0]
+        signal=arrayAux[1]
+        text1.set("Archivo actual: "+fileName.get()+".wav")    
+        fButton2['state']='normal'
 def fourierFile(fileName, text1, fButton2, fButton3):
     arrayAux = fileDirector.openWav(fileName.get())
     global fs_rate 
@@ -53,6 +66,26 @@ def fourierFile(fileName, text1, fButton2, fButton3):
         text1.set("Archivo actual: "+fileName.get()+".wav")    
         fButton2['state']='normal'
         fButton3['state']='normal'
+
+
+def digitalModulation():
+    #Creacion de la ventana
+    dM = Toplevel()
+    #Text
+    text1=StringVar()
+    text1.set("Archivo actual: Ninguno")
+    #Labels
+    Label(dM, text="Nombre de archivo: (Sin .wav)").grid(row=0)
+    Label(dM, textvariable=text1).grid(row=1, column=1)
+    fileName = Entry(dM)
+    fileName.grid(row=0, column=1)
+    
+    
+    #Botones
+    Button(dM, text = "Abrir archivo", 
+        command = lambda: digitalModulationFile(fileName, text1, modulacionASK)).grid(row=2, column=0, sticky=W, pady=4)
+    modulacionASK=Button(dM, text = "Modulacion ASK", 
+        command = lambda: DigitalModulation.mainDigitalModulation()).grid(row=2, column=0, sticky=W, pady=4)
 
 def fourier():
     #Creacion de la ventana
@@ -85,6 +118,7 @@ master = Tk()
 
 recordButton = Button(master, text="Grabar", command = record).grid(row=0, column=0, sticky=W, pady=4)
 fourierButton = Button(master, text="Transformada", command = fourier).grid(row=0, column=1, sticky=W, pady=4)
+digitalModulation = Button(master, text="Modulación Digital", command = digitalModulation).grid(row=0, column=2, sticky=W, pady=4)
 
 master.mainloop()
 
