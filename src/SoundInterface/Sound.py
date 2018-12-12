@@ -2,6 +2,7 @@ import pyaudio
 import wave
 from tkinter import *
 from tkinter import messagebox
+import scipy.io.wavfile as wavfile
 
 def microphone(recordFileName, recordSeconds, text1):
     """PyAudio example: Record a few seconds of audio and save to a WAVE file."""
@@ -42,3 +43,5 @@ def microphone(recordFileName, recordSeconds, text1):
     wf.setframerate(RATE)
     wf.writeframes(b''.join(frames))
     wf.close()
+
+ 

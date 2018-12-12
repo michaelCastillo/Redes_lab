@@ -2,7 +2,7 @@ import sys
 sys.path.insert(0, 'Files InOut')
 import fileDirector
 sys.path.insert(0, 'SoundInterface')
-import SoundIn as sin
+import Sound as sin
 sys.path.insert(0, 'FFT')
 import FFT
 sys.path.insert(0, 'modulation')
@@ -80,12 +80,18 @@ def digitalModulation():
     fileName = Entry(dM)
     fileName.grid(row=0, column=1)
     
+    #Checkbox
+    var1 = IntVar()
+    Checkbutton(dM, text="Mostrar Graficas", variable=var1).grid(row=3, sticky=W)
+    
     
     #Botones
     Button(dM, text = "Abrir archivo", 
         command = lambda: digitalModulationFile(fileName, text1, modulacionASK)).grid(row=2, column=0, sticky=W, pady=4)
     modulacionASK=Button(dM, text = "Modulacion ASK", 
-        command = lambda: DigitalModulation.mainDigitalModulation()).grid(row=2, column=0, sticky=W, pady=4)
+        command = lambda: DigitalModulation.mainDigitalModulation("ASK",int(var1.get()), "HOLA")).grid(row=2, column=0, sticky=W, pady=4)
+    modulacionFSK=Button(dM, text = "Modulacion FSK", 
+        command = lambda: DigitalModulation.mainDigitalModulation("FSK",int(var1.get()), "HOLA2")).grid(row=2, column=1, sticky=W, pady=4)
 
 def fourier():
     #Creacion de la ventana

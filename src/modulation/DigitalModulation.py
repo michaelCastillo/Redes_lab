@@ -1,12 +1,12 @@
 import numpy as np
+import sys
 from matplotlib import pyplot as plt
 import scipy.io.wavfile as wavfile
+sys.path.insert(0, '../SoundInterface')
+import SoundOut as sin
 
 
-def writeWav(fileName, rate, data):
-    wavfile.write(fileName, rate, data)
-
-def ASK(signal, fs, bitRate, nFigura, title):
+def ASK(signal, fs, bitRate, title):
     t=np.arange(0, 1/bitRate, 1 / fs)
     A=20
     B=10
@@ -20,18 +20,43 @@ def ASK(signal, fs, bitRate, nFigura, title):
             y.extend(carrier1)
         else:
             y.extend(carrier2)
-    plt.figure(nFigura)
-    plt.title("ASK Carrier 1")    
+   #Portadoras
+    plt.figure(1)
+    plt.subplot(2,1,1)
+    plt.title("ASK Carrier "+str(A)+" [db]")    
     plt.plot(carrier1)
-    plt.figure(nFigura+1)
-    plt.title("ASK Carrier 2")    
+    plt.subplot(2,1,2)    
+    plt.title("ASK Carrier 2 "+str(B)+" [db]")    
     plt.plot(carrier2)
-    plt.figure(nFigura+2)
-    plt.title(title)
+    plt.subplot(2,1,2)  
+    plt.subplots_adjust(hspace = 1)
+    #Señal
+    plt.figure(2)
+    dCurve=genDigitalCurve(signal, fs, bitRate)
+    plt.title("Señal Digital")
+    plt.subplot(2,1,1)
     plt.plot(y)
+    plt.title(title)    
+    plt.subplot(2,1,2)
+    plt.plot(dCurve)
+    plt.subplots_adjust(hspace = 1)
+    return np.array(y)
+    
+def genDigitalCurve(signal, fs, bitRate):
+    t=np.arange(0, 1/bitRate, 1 / fs)
+    
+    carrier1 = [1]*len(t)
+    carrier2 = [0]*len(t)
+    y=[]
+    for bit in signal:
+        if (bit==1):
+            y.extend(carrier1)
+        else:
+            y.extend(carrier2)
+    
     return np.array(y)
 
-def FSK(signal, fs, bitRate, nFigura, title):
+def FSK(signal, fs, bitRate, title):
     A=10
     f1=fs/5 #Hz
     f2=fs/6 #Hz
@@ -44,36 +69,45 @@ def FSK(signal, fs, bitRate, nFigura, title):
             y.extend(carrier1)
         else:
             y.extend(carrier2)
-    plt.figure(nFigura)
-    plt.title("FSK Carrier 1")    
+    #Portadoras
+    plt.figure(1)
+    plt.subplot(2,1,1)
+    plt.title("FSK Carrier "+str(f1)+" [Hz]")    
     plt.plot(carrier1)
-    plt.figure(nFigura+1)
-    plt.title("FSK Carrier 2")    
+    plt.subplot(2,1,2)    
+    plt.title("FSK Carrier 2 "+str(f2)+" [Hz]")    
     plt.plot(carrier2)
-    plt.figure(nFigura+2)
-    plt.title(title)
+    plt.subplot(2,1,2)  
+    plt.subplots_adjust(hspace = 1)
+    #Señal
+    plt.figure(2)
+    dCurve=genDigitalCurve(signal, fs, bitRate)
+    plt.title("Señal Digital")
+    plt.subplot(2,1,1)
     plt.plot(y)
+    plt.title(title)    
+    plt.subplot(2,1,2)
+    plt.plot(dCurve)
+    plt.subplots_adjust(hspace = 1)
     return np.array(y)
 
 
-def mainDigitalModulation():
-    test=[0,1,0,1,0,1]
-    test2=[1,0]*100
+def mainDigitalModulation(modType,flag,fileName):
+    test=[0,1]*5
     bitRate=10 #Bit por segundo
-    titleFSK="FSK"
-    titleASK="ASK"
     fs = 1000 #Frecuencia de muestreo en Hz
-
     #ASK
-    yASK=ASK(test, fs, bitRate, nFigura=1, title=titleASK+" test1")
-    yASK2=ASK(test2, fs, bitRate, nFigura=4, title=titleASK+ "test2")
+    y=np.array([])
+    
+    if(modType=="ASK"):
+        #Funcion que modula
+        y=ASK(test, fs, bitRate, title="ASK "+fileName)
 
     #FSK
-    #y=FSK(test, fs, bitRate, nFigura=7, title=titleFSK+" test1")
-    #y2=FSK(test2, fs, bitRate, nFigura=10, title=titleFSK+" test2")
-
-    #writeWav("test1FSK.wav", fs, y)
-    #writeWav("test2FSK.wav", fs, y2)
-    writeWav("test1ASK.wav", fs, yASK)
-    writeWav("test2ASK.wav", fs, yASK2)
-    plt.show()
+    if(modType=="FSK"):
+        #Funcion que modula
+        y=FSK(test, fs, bitRate, title="FSK "+fileName)
+    #Escribir archivo .wav
+    sin.writeWav(fileName+modType, fs, y)
+    if(flag==1):
+        plt.show()
