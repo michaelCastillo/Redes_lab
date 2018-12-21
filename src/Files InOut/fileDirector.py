@@ -8,9 +8,27 @@ import numpy as np
 #from matplotlib import pyplot as plt
 
 
+def openDigitalWav(fileName):
+    try:
+        
+
+        fs_rate, signal = wavfile.read("../../Wav/"+fileName+".wav")
+        fs_signal = []
+
+        if(type(signal[0]) is np.ndarray ):
+            for el in signal:
+                fs_signal.append(el[0])
+            signal = np.asarray(fs_signal)
+        #print(fs_rate,signal)       
+        return fs_rate, signal
+    except:
+        print ("\nError: El archivo de audio "+fileName+".wav"+" no existe\n")
+    return []
 
 def openWav(fileName):
     try:
+        
+
         fs_rate, signal = wavfile.read("../Wav/"+fileName+".wav")
         fs_signal = []
         print("Signal TIPO")
@@ -20,7 +38,7 @@ def openWav(fileName):
             for el in signal:
                 fs_signal.append(el[0])
             signal = np.asarray(fs_signal)
-        print(fs_rate,signal)
+        print(fs_rate,signal)       
         return fs_rate, signal
     except:
         print ("\nError: El archivo de audio "+fileName+".wav"+" no existe\n")

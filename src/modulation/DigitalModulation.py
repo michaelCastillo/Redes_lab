@@ -4,7 +4,12 @@ from matplotlib import pyplot as plt
 import scipy.io.wavfile as wavfile
 sys.path.insert(0, '../SoundInterface')
 import SoundOut as sin
-
+sys.path.insert(0, '../Files InOut')
+import fileDirector as FD
+import DigitalDemodulation as DDemodulation
+import warnings
+warnings.filterwarnings("ignore")
+from bitstring import Bits
 
 def ASK(signal, fs, bitRate, title):
     t=np.arange(0, 1/bitRate, 1 / fs)
@@ -20,6 +25,7 @@ def ASK(signal, fs, bitRate, title):
             y.extend(carrier1)
         else:
             y.extend(carrier2)
+    
    #Portadoras
     plt.figure(1)
     plt.subplot(2,1,1)
@@ -44,7 +50,6 @@ def ASK(signal, fs, bitRate, title):
     
 def genDigitalCurve(signal, fs, bitRate):
     t=np.arange(0, 1/bitRate, 1 / fs)
-    
     carrier1 = [1]*len(t)
     carrier2 = [0]*len(t)
     y=[]
@@ -53,7 +58,6 @@ def genDigitalCurve(signal, fs, bitRate):
             y.extend(carrier1)
         else:
             y.extend(carrier2)
-    
     return np.array(y)
 
 def FSK(signal, fs, bitRate, title):
@@ -90,12 +94,38 @@ def FSK(signal, fs, bitRate, title):
     plt.plot(dCurve)
     plt.subplots_adjust(hspace = 1)
     return np.array(y)
-
+def toBinary(x):
+    x=Bits(int=x, length=32)
+    return x.bin
 
 def mainDigitalModulation(modType,flag,fileName):
-    test=[0,1]*5
+    flagTest=False
+    test=[]
+    binarySignal=[]
+    if(flagTest):
+        fs, signal = FD.openDigitalWav(fileName)
+        #print("Signal:",signal)
+        #toBinary = lambda x:Bits(int=x,length=32)
+        signal=signal[0:10000]
+        print("Original: ", signal)
+        print(len(signal))
+        binaryFunc = np.vectorize(toBinary)
+        binarySignalAux=binaryFunc(signal)
+        maxBinaryLenght=len("{0:b}".format((max(signal))))
+        
+        for index, value in enumerate(binarySignalAux):
+            i=len(str(value))
+            while i<maxBinaryLenght:
+                binarySignal.append(0)
+                i=i+1
+            for bit in value:
+                binarySignal.append(int(bit))
+        binarySignal=np.array(binarySignal)
+    else:
+        test=[0,1,0,0,0,1]*10
+        fs = 1000 #Frecuencia de muestreo en Hz
+    
     bitRate=10 #Bit por segundo
-    fs = 1000 #Frecuencia de muestreo en Hz
     #ASK
     y=np.array([])
     
@@ -108,6 +138,11 @@ def mainDigitalModulation(modType,flag,fileName):
         #Funcion que modula
         y=FSK(test, fs, bitRate, title="FSK "+fileName)
     #Escribir archivo .wav
+    print(y)
     sin.writeWav(fileName+modType, fs, y)
-    if(flag==1):
-        plt.show()
+    plt.show()
+    #Demodulacion
+    DDemodulation.mainDigitalDemodulation(flag, bitRate, fileName+modType)
+    
+    
+mainDigitalModulation("ASK",1,"pruebita")
