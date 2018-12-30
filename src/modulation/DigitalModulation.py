@@ -43,6 +43,11 @@ def ASK(signal, fs, bitRate, title):
     plt.subplots_adjust(hspace = 1)
     #Señal
     """
+    #Se agrega ruido gausiano a la señal modulada
+    mean = 0
+    std = 1
+    noise = np.random.normal(0.0, 2000, len(y))
+    y = y + noise
     plt.figure(2)
     dCurve=genDigitalCurve(signal, fs, bitRate)
     plt.title("Señal Digital")
@@ -54,6 +59,7 @@ def ASK(signal, fs, bitRate, title):
     plt.subplots_adjust(hspace = 1)
 
     #Demodulacion
+    
     ask_demodulation(y,carrier1,carrier2,t,fs,bitRate)
 
     return np.array(y)
@@ -101,6 +107,8 @@ def FSK(signal, fs, bitRate, title):
     plt.subplot(2,1,2)  
     plt.subplots_adjust(hspace = 1)
     #Señal
+    noise = np.random.normal(0.0, 5, len(y))
+    y = y + noise
     plt.figure(2)
     dCurve=genDigitalCurve(signal, fs, bitRate)
     plt.title("Señal Digital")
@@ -286,4 +294,4 @@ def mainDigitalModulation(modType,flag,fileName):
     #demodulacion FSK
     #DDemodulation.mainDigitalDemodulation(flag, bitRate, fileName+modType)
 
-mainDigitalModulation("ASK",1,"pruebita")
+mainDigitalModulation("FSK",1,"pruebita")
