@@ -1,5 +1,6 @@
 import numpy as np
 import sys
+import math
 from matplotlib import pyplot as plt
 import scipy.io.wavfile as wavfile
 sys.path.insert(0, '../SoundInterface')
@@ -53,7 +54,7 @@ def ASK(signal, fs, bitRate, title):
     plt.subplots_adjust(hspace = 1)
 
     #Demodulacion
-    demodulation(y,carrier1,carrier2,t,fs,bitRate)
+    ask_demodulation(y,carrier1,carrier2,t,fs,bitRate)
 
     return np.array(y)
     
@@ -109,12 +110,65 @@ def FSK(signal, fs, bitRate, title):
     plt.subplot(2,1,2)
     plt.plot(dCurve)
     plt.subplots_adjust(hspace = 1)
-    demodulation(y,carrier1,carrier2,t,fs,bitRate)
+    
+    fsk_demodulation(y,carrier1,carrier2,t,fs,bitRate)
 
     return np.array(y)
 
+def ask_demodulation(signal,carrier_1,carrier_2,t,fs_rate,bitRate):
+    signalTime = getSignalTime(fs_rate,signal)
+    corr1 = sg.fftconvolve(signal,carrier_1,'same')
+    #corr2 = sg.fftconvolve(signal,carrier_2,'same')
+    # Se obtienen las correlaciones
+    corr1 = sg.medfilt(np.abs(corr1))
+    #corr2 = sg.medfilt(np.abs(corr2))
+    # Se genera un array vacio para almacenar los bits obtenidos.
+    arrayBits = []
+    # Para recorrer el arreglo de correlaciones se debe mover fs_rate*tiempoBit para encontrar
+    # cada maximo
+    skip = fs_rate//bitRate  # muestras por 1 bit.
+    bit_index = skip//2   # Indice del bit inicia en el centro de la primera señal.
+    print(len(corr1))
+    while(bit_index < len(corr1)):
+        bitCorr1 = corr1[bit_index]
+        bitCorr2 = max(corr1) - corr1[bit_index] 
+        if( bitCorr1 > bitCorr2):
+            arrayBits.append(1)
+        else:
+            arrayBits.append(0)
+        bit_index = bit_index + skip
 
-def demodulation(signal,carrier_1,carrier_2,t,fs_rate,bitRate):
+    dCurve=genDigitalCurve(arrayBits, fs_rate, bitRate)
+    plt.figure(5)
+    plt.subplot(2,1,1)
+    plt.plot(arrayBits)
+    plt.title("arrayBits")
+    plt.subplot(2,1,2)
+    plt.plot(dCurve)
+    plt.title("Demodulada")
+    plt.subplots_adjust(hspace = 1)
+
+    print(str(arrayBits))
+
+    result = depureMachine([0,1,0,0,0,1,]*10,arrayBits)
+
+    if(result == 0):
+        print("Demodulacion exitosa")
+    else:
+        print("Demodulacion fallida")
+
+    plt.figure(6)
+    plt.subplot(3,1,1)
+    plt.plot(signalTime,corr1)
+    plt.title("Correlacion 1")
+    plt.subplot(3,1,2)
+    #plt.plot(signalTime,corr2)
+    #plt.title("Correlacion 2")
+    plt.subplots_adjust(hspace = 1)
+    plt.show()
+
+
+def fsk_demodulation(signal,carrier_1,carrier_2,t,fs_rate,bitRate):
     signalTime = getSignalTime(fs_rate,signal)
     corr1 = sg.fftconvolve(signal,carrier_1,'same')
     corr2 = sg.fftconvolve(signal,carrier_2,'same')
@@ -165,6 +219,7 @@ def toBinary(x):
 def depureMachine(digitalSignal,digitalDemodulation):
     if(len(digitalSignal) != len(digitalDemodulation)):
         print("Las señales son diferentes! ")
+        return 1
     else:
         i = 0
         for bit in digitalSignal:
@@ -201,12 +256,20 @@ def mainDigitalModulation(modType,flag,fileName):
         binarySignal=np.array(binarySignal)
     else:
         test=[0,1,0,0,0,1]*10
+        print(test)
+        plt.figure(4)
+        plt.subplot(3,1,1)
+        plt.plot(test)
+        plt.title("test")
+        #plt.subplot(3,1,2)
+        #plt.plot(t,carrier_2)
+        #plt.title("Carrier 2")
+        #plt.subplots_adjust(hspace = 1)
         fs = 1000 #Frecuencia de muestreo en Hz
     
     bitRate=10 #Bit por segundo
-    #ASK
-    y=np.array([])
-    
+
+    y=np.array([])    
     if(modType=="ASK"):
         #Funcion que modula
         y=ASK(test, fs, bitRate, title="ASK "+fileName)
@@ -219,15 +282,8 @@ def mainDigitalModulation(modType,flag,fileName):
     print(y)
     sin.writeWav(fileName+modType, fs, y)
     plt.show()
-    
     #Plot de correlacionadores
-    # demodulacion FSK
-    
+    #demodulacion FSK
+    #DDemodulation.mainDigitalDemodulation(flag, bitRate, fileName+modType)
 
-
-
-    # DDemodulation.mainDigitalDemodulation(flag, bitRate, fileName+modType)
-
-    
-    
 mainDigitalModulation("ASK",1,"pruebita")
