@@ -129,6 +129,9 @@ def mainDigitalDemodulation(flag, bitRate,fileName):
     fs, signal = fileIn.openDigitalWav(fileName)
     askDemodulation(15, signal, flag, bitRate, fs)
     plotAskDemodulation(15, signal, flag, bitRate, fs)
+    #Demodulacion
+    
+
 
 
 mainDigitalDemodulation(1, 10, "pruebita"+"ASK")

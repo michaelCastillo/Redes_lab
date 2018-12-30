@@ -6,15 +6,18 @@ sys.path.insert(0, '../SoundInterface')
 import SoundOut as sin
 sys.path.insert(0, '../Files InOut')
 import fileDirector as FD
-import DigitalDemodulation as DDemodulation
+# import DigitalDemodulation as DDemodulation
 import warnings
+from scipy import signal as sg
 warnings.filterwarnings("ignore")
 from bitstring import Bits
 
+
+
 def ASK(signal, fs, bitRate, title):
     t=np.arange(0, 1/bitRate, 1 / fs)
-    A=20
-    B=10
+    A=2000
+    B=50
     fc=fs/5
     
     carrier1 = A*np.cos(2*np.pi*fc*t)
@@ -27,7 +30,8 @@ def ASK(signal, fs, bitRate, title):
             y.extend(carrier2)
     
    #Portadoras
-    plt.figure(1)
+    # plt.figure(1)
+    """
     plt.subplot(2,1,1)
     plt.title("ASK Carrier "+str(A)+" [db]")    
     plt.plot(carrier1)
@@ -37,6 +41,7 @@ def ASK(signal, fs, bitRate, title):
     plt.subplot(2,1,2)  
     plt.subplots_adjust(hspace = 1)
     #Señal
+    """
     plt.figure(2)
     dCurve=genDigitalCurve(signal, fs, bitRate)
     plt.title("Señal Digital")
@@ -46,6 +51,10 @@ def ASK(signal, fs, bitRate, title):
     plt.subplot(2,1,2)
     plt.plot(dCurve)
     plt.subplots_adjust(hspace = 1)
+
+    #Demodulacion
+    demodulation(y,carrier1,carrier2,t,fs,bitRate)
+
     return np.array(y)
     
 def genDigitalCurve(signal, fs, bitRate):
@@ -59,6 +68,13 @@ def genDigitalCurve(signal, fs, bitRate):
         else:
             y.extend(carrier2)
     return np.array(y)
+
+def getSignalTime(fs_rate, signal):
+    signal_len = float(len(signal))
+    tAux = float(signal_len) / float(fs_rate)
+    t = np.linspace(0, tAux, signal_len)
+    return t
+
 
 def FSK(signal, fs, bitRate, title):
     A=10
@@ -93,10 +109,72 @@ def FSK(signal, fs, bitRate, title):
     plt.subplot(2,1,2)
     plt.plot(dCurve)
     plt.subplots_adjust(hspace = 1)
+    demodulation(y,carrier1,carrier2,t,fs,bitRate)
+
     return np.array(y)
+
+
+def demodulation(signal,carrier_1,carrier_2,t,fs_rate,bitRate):
+    signalTime = getSignalTime(fs_rate,signal)
+    corr1 = sg.fftconvolve(signal,carrier_1,'same')
+    corr2 = sg.fftconvolve(signal,carrier_2,'same')
+    plt.figure(5)
+    plt.subplot(3,1,1)
+    plt.plot(t,carrier_1)
+    plt.subplot(3,1,2)
+    plt.plot(t,carrier_2)
+
+    #Se obtienen las correlaciones
+    corr1 = sg.medfilt(np.abs(corr1))
+    corr2 = sg.medfilt(np.abs(corr2))
+    #Se genera un array vacio para almacenar los bits obtenidos.
+    arrayBits = []
+
+    #Para recorrer el arreglo de correlaciones se debe mover fs_rate*tiempoBit para encontrar
+    # cada maximo
+    skip = fs_rate//bitRate  #muestras por 1 bit.
+    bit_index = skip//2        # Indice del bit inicia en el centro de la primera señal.
+    print(len(corr1))
+    print(type(bit_index))
+    depur = 0
+    while(bit_index < len(corr1)):
+        bitCorr1 = corr1[bit_index]
+        bitCorr2 = corr2[bit_index]
+        if( bitCorr1 > bitCorr2):
+            arrayBits.append(1)
+        else:
+            arrayBits.append(0)
+        bit_index = bit_index + skip
+    print(str(arrayBits))
+    result = depureMachine([0,1,0,0,0,1,]*10,arrayBits)
+    if(result == 0):
+        print("Demodulacion exitosa")
+    else:
+        print("Demodulacion fallida")
+    plt.figure(6)
+    plt.subplot(3,1,1)
+    plt.plot(signalTime,corr1)
+    plt.subplot(3,1,2)
+    plt.plot(signalTime,corr2)
+    plt.show()
+
 def toBinary(x):
     x=Bits(int=x, length=32)
     return x.bin
+
+def depureMachine(digitalSignal,digitalDemodulation):
+    if(len(digitalSignal) != len(digitalDemodulation)):
+        print("Las señales son diferentes! ")
+    else:
+        i = 0
+        for bit in digitalSignal:
+            if(bit != digitalDemodulation[i]):
+                print("Las señales son diferentes! ")
+                return 1
+            i = i + 1
+    print("Las señales son iguales! ")
+    return 0
+
 
 def mainDigitalModulation(modType,flag,fileName):
     flagTest=False
@@ -141,8 +219,15 @@ def mainDigitalModulation(modType,flag,fileName):
     print(y)
     sin.writeWav(fileName+modType, fs, y)
     plt.show()
-    #Demodulacion
-    DDemodulation.mainDigitalDemodulation(flag, bitRate, fileName+modType)
+    
+    #Plot de correlacionadores
+    # demodulacion FSK
+    
+
+
+
+    # DDemodulation.mainDigitalDemodulation(flag, bitRate, fileName+modType)
+
     
     
 mainDigitalModulation("ASK",1,"pruebita")
