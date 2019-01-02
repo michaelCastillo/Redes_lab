@@ -12,6 +12,10 @@ import warnings
 from scipy import signal as sg
 warnings.filterwarnings("ignore")
 from bitstring import Bits
+import wave 
+sys.path.insert(0, '../FFT')
+import FFT as ffto
+
 
 
 
@@ -85,8 +89,8 @@ def getSignalTime(fs_rate, signal):
 
 def FSK(signal, fs, bitRate, title):
     A=10
-    f1=fs/5 #Hz
-    f2=fs/6 #Hz
+    f1=(fs+2000)/4 #Hz
+    f2=(fs+2000)/4 #Hz
     t=np.arange(0, 1/bitRate, 1 / fs)
     carrier1 = A*np.cos(2*np.pi*f1*t)
     carrier2 = A*np.cos(2*np.pi*f2*t)
@@ -163,7 +167,7 @@ def ask_demodulation(signal,carrier_1,carrier_2,t,fs_rate,bitRate):
     if(result == 0):
         print("Demodulacion exitosa")
     else:
-        print("Demodulacion fallida")
+        print("Demodulacion fallida Tasa de error: "+str(result))
 
     plt.figure(6)
     plt.subplot(3,1,1)
@@ -187,8 +191,10 @@ def fsk_demodulation(signal,carrier_1,carrier_2,t,fs_rate,bitRate):
     plt.plot(t,carrier_2)
 
     #Se obtienen las correlaciones
-    corr1 = sg.medfilt(np.abs(corr1))
-    corr2 = sg.medfilt(np.abs(corr2))
+    #Implementando el filtro  0 - 20k
+    
+    corr1 = ffto.passBandFilter(fs_rate,10,2000,corr1)
+    corr2 = ffto.passBandFilter(fs_rate,10,2000,corr2)
     #Se genera un array vacio para almacenar los bits obtenidos.
     arrayBits = []
 
@@ -212,7 +218,7 @@ def fsk_demodulation(signal,carrier_1,carrier_2,t,fs_rate,bitRate):
     if(result == 0):
         print("Demodulacion exitosa")
     else:
-        print("Demodulacion fallida")
+        print("Demodulacion fallida Tasa de error: "+str(result)+"%")
     plt.figure(6)
     plt.subplot(3,1,1)
     plt.plot(signalTime,corr1)
@@ -225,17 +231,15 @@ def toBinary(x):
     return x.bin
 
 def depureMachine(digitalSignal,digitalDemodulation):
-    if(len(digitalSignal) != len(digitalDemodulation)):
-        print("Las señales son diferentes! ")
-        return 1
-    else:
-        i = 0
-        for bit in digitalSignal:
-            if(bit != digitalDemodulation[i]):
-                print("Las señales son diferentes! ")
-                return 1
-            i = i + 1
+    errors = 0
+    i = 0
+    for bit in digitalSignal:
+        if(bit != digitalDemodulation[i]):
+            errors = errors + 1
+        i = i + 1
     print("Las señales son iguales! ")
+    if(errors != 0):
+        return float(errors)*100/float(len(digitalSignal))
     return 0
 
 
@@ -243,11 +247,13 @@ def mainDigitalModulation(modType,flag,fileName):
     flagTest=False
     test=[]
     binarySignal=[]
+    fs, signal = FD.openDigitalWav(fileName)
     if(flagTest):
-        fs, signal = FD.openDigitalWav(fileName)
         #print("Signal:",signal)
         #toBinary = lambda x:Bits(int=x,length=32)
-        signal=signal[0:10000]
+        # signal=signal[0:10000]
+    
+        """
         print("Original: ", signal)
         print(len(signal))
         binaryFunc = np.vectorize(toBinary)
@@ -262,8 +268,14 @@ def mainDigitalModulation(modType,flag,fileName):
             for bit in value:
                 binarySignal.append(int(bit))
         binarySignal=np.array(binarySignal)
+        """
+        #tomando la señal en binario
+        waveData = wave.open("../../Wav/"+fileName+".wav","rb")
+        binarySignal = waveData.readframes(waveData.getnframes())
+
+
     else:
-        test=[0,1,0,0,0,1]*10
+        test=[0,1,0,0,0,1]*100
         print(test)
         plt.figure(4)
         plt.subplot(3,1,1)
@@ -275,7 +287,7 @@ def mainDigitalModulation(modType,flag,fileName):
         #plt.subplots_adjust(hspace = 1)
         fs = 1000 #Frecuencia de muestreo en Hz
     
-    bitRate=10 #Bit por segundo
+    bitRate=100 #Bit por segundo
 
     y=np.array([])    
     if(modType=="ASK"):
@@ -294,4 +306,4 @@ def mainDigitalModulation(modType,flag,fileName):
     #demodulacion FSK
     #DDemodulation.mainDigitalDemodulation(flag, bitRate, fileName+modType)
 
-mainDigitalModulation("FSK",1,"pruebita")
+mainDigitalModulation("FSK",1,"handel")
