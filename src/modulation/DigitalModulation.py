@@ -14,6 +14,18 @@ warnings.filterwarnings("ignore")
 from bitstring import Bits
 
 
+def depureMachine(digitalSignal,digitalDemodulation):
+    errors = 0
+    i = 0
+    for bit in digitalSignal:
+        if(bit != digitalDemodulation[i]):
+            errors = errors + 1
+        i = i + 1
+    if(errors != 0):
+        return float(errors)*100/float(len(digitalSignal))
+    return 0
+
+
 
 def ASK(signal, fs, bitRate, title):
     t=np.arange(0, 1/bitRate, 1 / fs)
@@ -119,8 +131,12 @@ def FSK(signal, fs, bitRate, title):
     plt.plot(dCurve)
     plt.subplots_adjust(hspace = 1)
     
-    fsk_demodulation(y,carrier1,carrier2,t,fs,bitRate)
-
+    arrayBits = fsk_demodulation(y,carrier1,carrier2,t,fs,bitRate)
+    result = depureMachine([0,1,0,0,0,1,]*10,arrayBits)
+    if(result == 0):
+        print("Demodulacion exitosa")
+    else:
+        print("Demodulacion fallida Tasa de error: "+str(result)+"%")
     return np.array(y)
 
 def ask_demodulation(signal,carrier_1,carrier_2,t,fs_rate,bitRate):
@@ -178,8 +194,8 @@ def ask_demodulation(signal,carrier_1,carrier_2,t,fs_rate,bitRate):
 
 def fsk_demodulation(signal,carrier_1,carrier_2,t,fs_rate,bitRate):
     signalTime = getSignalTime(fs_rate,signal)
-    corr1 = sg.fftconvolve(signal,carrier_1,'same')
-    corr2 = sg.fftconvolve(signal,carrier_2,'same')
+    corr1 = np.correlate(signal,carrier_1,'same')
+    corr2 = np.correlate(signal,carrier_2,'same')
     plt.figure(5)
     plt.subplot(3,1,1)
     plt.plot(t,carrier_1)
@@ -187,8 +203,15 @@ def fsk_demodulation(signal,carrier_1,carrier_2,t,fs_rate,bitRate):
     plt.plot(t,carrier_2)
 
     #Se obtienen las correlaciones
-    corr1 = sg.medfilt(np.abs(corr1))
-    corr2 = sg.medfilt(np.abs(corr2))
+    # corr1 = sg.medfilt(np.abs(corr1))
+    # corr2 = sg.medfilt(np.abs(corr2))
+    #Hilbert
+    corr1_raw = corr1
+    corr2_raw = corr2
+    corr1 = np.abs(sg.hilbert(corr1))
+    corr2 = np.abs(sg.hilbert(corr2))
+    
+
     #Se genera un array vacio para almacenar los bits obtenidos.
     arrayBits = []
 
@@ -199,44 +222,54 @@ def fsk_demodulation(signal,carrier_1,carrier_2,t,fs_rate,bitRate):
     print(len(corr1))
     print(type(bit_index))
     depur = 0
+    indexDemod1 = []
+    indexDemod2 = []
     while(bit_index < len(corr1)):
-        bitCorr1 = corr1[bit_index]
-        bitCorr2 = corr2[bit_index]
-        if( bitCorr1 > bitCorr2):
+        bitCorr1 = corr1[bit_index-skip//2:bit_index+skip//2]
+        bitCorr2 = corr2[bit_index-skip//2:bit_index+skip//2]
+        if( max(bitCorr1) > max(bitCorr2)):
             arrayBits.append(1)
+            indexDemod1.append(bit_index)
         else:
+            indexDemod2.append(bit_index)
             arrayBits.append(0)
         bit_index = bit_index + skip
     print(str(arrayBits))
-    result = depureMachine([0,1,0,0,0,1,]*10,arrayBits)
-    if(result == 0):
-        print("Demodulacion exitosa")
-    else:
-        print("Demodulacion fallida")
+    
+
+    valuesToPointCorr1 = [0]*int(len(corr1))
+    valuesToPointCorr2 = [0]*int(len(corr2))
+    for i in indexDemod1:
+        valuesToPointCorr1[i] = corr1[i]
+    i = 0
+    for i in indexDemod2:
+        valuesToPointCorr2[i] = corr2[i]
+
+
+
+
+
+    # plt.figure(6)
     plt.figure(6)
     plt.subplot(3,1,1)
-    plt.plot(signalTime,corr1)
+    plt.title("Hilbert portadora 1")
+    # plt.plot(signalTime,np.abs(corr1_raw))
+    plt.plot(signalTime,np.abs(valuesToPointCorr1),"*-")
+    plt.plot(signalTime,np.abs(valuesToPointCorr2),"*-",color="red")
+    plt.plot(signalTime,corr1,color="green")
     plt.subplot(3,1,2)
-    plt.plot(signalTime,corr2)
+    plt.title("Hilbert portadora 2")
+    plt.plot(signalTime,np.abs(valuesToPointCorr2),"*-")
+    plt.plot(signalTime,np.abs(valuesToPointCorr1),"*-",color="red")
+    plt.plot(signalTime,corr2,color="green")
     plt.show()
+    return arrayBits
 
 def toBinary(x):
     x=Bits(int=x, length=32)
     return x.bin
 
-def depureMachine(digitalSignal,digitalDemodulation):
-    if(len(digitalSignal) != len(digitalDemodulation)):
-        print("Las señales son diferentes! ")
-        return 1
-    else:
-        i = 0
-        for bit in digitalSignal:
-            if(bit != digitalDemodulation[i]):
-                print("Las señales son diferentes! ")
-                return 1
-            i = i + 1
-    print("Las señales son iguales! ")
-    return 0
+
 
 
 def mainDigitalModulation(modType,flag,fileName):
@@ -275,7 +308,7 @@ def mainDigitalModulation(modType,flag,fileName):
         #plt.subplots_adjust(hspace = 1)
         fs = 1000 #Frecuencia de muestreo en Hz
     
-    bitRate=10 #Bit por segundo
+    bitRate=100 #Bit por segundo
 
     y=np.array([])    
     if(modType=="ASK"):
@@ -287,7 +320,7 @@ def mainDigitalModulation(modType,flag,fileName):
         #Funcion que modula
         y=FSK(test, fs, bitRate, title="FSK "+fileName)
     #Escribir archivo .wav
-    print(y)
+    
     sin.writeWav(fileName+modType, fs, y)
     plt.show()
     #Plot de correlacionadores
