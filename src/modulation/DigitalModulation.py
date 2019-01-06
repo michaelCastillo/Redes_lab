@@ -2,6 +2,7 @@ import numpy as np
 import sys
 import math
 from matplotlib import pyplot as plt
+
 import scipy.io.wavfile as wavfile
 sys.path.insert(0, '../SoundInterface')
 import SoundOut as sin
@@ -97,17 +98,24 @@ def getSignalTime(fs_rate, signal):
 
 def FSK(signal, fs, bitRate, title):
     A=10
-    f1=fs/5 #Hz
-    f2=fs/6 #Hz
+    f1=fs/4+2000
+    f2=fs/4-2000
     t=np.arange(0, 1/bitRate, 1 / fs)
     carrier1 = A*np.cos(2*np.pi*f1*t)
     carrier2 = A*np.cos(2*np.pi*f2*t)
     y=[]
+    
+    bitSamples=len(t)  #borrar
+    verticalBit = [bitSamples//2] #borrar
+    i = 0 #borrar
     for bit in signal:
         if (bit==1):
             y.extend(carrier1)
         else:
             y.extend(carrier2)
+        if(i != 0):
+            verticalBit.append(verticalBit[i-1] + bitSamples) #Borrar
+        i = i + 1  #borrar
     #Portadoras
     plt.figure(1)
     plt.subplot(2,1,1)
@@ -119,14 +127,16 @@ def FSK(signal, fs, bitRate, title):
     plt.subplot(2,1,2)  
     plt.subplots_adjust(hspace = 1)
     #Señal
-    noise = np.random.normal(0.0, 5, len(y))
-    y = y + noise
+    noise = np.random.normal(0.0, 1, len(y))
+    # y = y + noise
     plt.figure(2)
     dCurve=genDigitalCurve(signal, fs, bitRate)
-    plt.title("Señal Digital")
+    plt.title("Señal Modulada")
     plt.subplot(2,1,1)
+    for line in verticalBit:
+        plt.axvline(line,color="red")   
     plt.plot(y)
-    plt.title(title)    
+    plt.title("Señan digital entrante")
     plt.subplot(2,1,2)
     plt.plot(dCurve)
     plt.subplots_adjust(hspace = 1)
@@ -217,7 +227,9 @@ def fsk_demodulation(signal,carrier_1,carrier_2,t,fs_rate,bitRate):
 
     #Para recorrer el arreglo de correlaciones se debe mover fs_rate*tiempoBit para encontrar
     # cada maximo
+    
     skip = fs_rate//bitRate  #muestras por 1 bit.
+    print("Skip "+str(skip))
     bit_index = skip//2        # Indice del bit inicia en el centro de la primera señal.
     print(len(corr1))
     print(type(bit_index))
@@ -225,9 +237,9 @@ def fsk_demodulation(signal,carrier_1,carrier_2,t,fs_rate,bitRate):
     indexDemod1 = []
     indexDemod2 = []
     while(bit_index < len(corr1)):
-        bitCorr1 = corr1[bit_index-skip//2:bit_index+skip//2]
-        bitCorr2 = corr2[bit_index-skip//2:bit_index+skip//2]
-        if( max(bitCorr1) > max(bitCorr2)):
+        bitCorr1 = corr1[bit_index]
+        bitCorr2 = corr2[bit_index]
+        if( bitCorr1 > bitCorr2):
             arrayBits.append(1)
             indexDemod1.append(bit_index)
         else:
@@ -306,9 +318,9 @@ def mainDigitalModulation(modType,flag,fileName):
         #plt.plot(t,carrier_2)
         #plt.title("Carrier 2")
         #plt.subplots_adjust(hspace = 1)
-        fs = 1000 #Frecuencia de muestreo en Hz
+        fs = 44000 #Frecuencia de muestreo en Hz
     
-    bitRate=100 #Bit por segundo
+    bitRate=1000 #Bit por segundo
 
     y=np.array([])    
     if(modType=="ASK"):
