@@ -2,136 +2,110 @@ import numpy as np
 import sys
 from matplotlib import pyplot as plt
 import scipy.io.wavfile as wavfile
-sys.path.insert(0, '../SoundInterface')
-import SoundOut as sin
-sys.path.insert(0, '../Files InOut')
-import fileDirector as fileIn
-from bitstring import Bits
+sys.path.insert(0, '../FFT')
+import FFT as fft_own
+from scipy import signal as sg
 
-import scipy
-from scipy import integrate, fft
-def calcFFT(fs_rate, signal):
-    #Se calcula la transformada
-    fft = scipy.fft(signal)
-    #Normalizar transformada dividiendola por el largo de la señal
-    fftNormalized = fft / len(signal)
-    #Genera las frecuencias de muestreo de acuerdo al largo de fftNormalize y el inverso de la tasa de muetreo
-    xfft = np.fft.fftfreq(len(fftNormalized), 1 / fs_rate)
-    
-    
-    return xfft, fftNormalized
 
-#GRÁFICA DE LA TRANSFORMADA DE FOURIER
-def plotTransform(xft, ft, title):
-    #Titulo gráfico
-    plt.title("Transformada " + title)
-    #Ejes x e y
-    plt.xlabel("Frecuencia [Hz]")
-    plt.ylabel("Amplitud [dB]")
-    plt.plot(xft, abs(ft))
-def genDigitalCurveDemodulation(signal, fs, bitRate):
+##importar del archivo.
+def getSignalTime(fs_rate, signal):
+    signal_len = float(len(signal))
+    tAux = float(signal_len) / float(fs_rate)
+    t = np.linspace(0, tAux, signal_len)
+    return t
+
+
+
+def depureMachine(digitalSignal,digitalDemodulation):
+    errors = 0
+    i = 0
+    for byte in digitalSignal:
+        arrayBits = "{0:08b}".format(byte)
+        for bit in arrayBits:
+            bit = int(bit)
+            if(bit != digitalDemodulation[i]):
+                errors = errors + 1
+            i = i + 1
+    if(errors != 0):
+        return float(errors)*100/float(len(digitalSignal))
+    return 0
+
+
+def fsk_demodulation(signal,f1,f2,fs,bitRate):
+    plot = False
+    A=100
     t=np.arange(0, 1/bitRate, 1 / fs)
-    carrier1 = [1]*len(t)
-    carrier2 = [0]*len(t)
-    y=[]
-    for bit in signal:
-        if (bit==1):
-            y.extend(carrier1)
+    carrier1 = A*np.cos(2*np.pi*f1*t)
+    carrier2 = A*np.cos(2*np.pi*f2*t)
+
+    corr1 = np.correlate(signal,carrier1,'same')
+    corr2 = np.correlate(signal,carrier2,'same')
+
+    corr1 = np.abs(corr1)
+    corr2 = np.abs(corr2)
+    print("He realizado las correlaciones! Grafico.")
+    if(plot):
+        plt.figure(2)
+        plt.subplot(2,1,1)
+        plt.plot(corr1[0:10000])
+        plt.subplot(2,1,2)
+        plt.plot(corr2[0:10000])
+    # plt.subplot(3,1,2)
+    # oPlot.plotTransform(xfft_corr2, fftMod_corr2, "Señal Portadora")
+    print("Transformadas calculadas")
+    
+    
+    arrayBits = []
+    
+
+    
+    
+    #Se genera un array vacio para almacenar los bits obtenidos.
+    #Para recorrer el arreglo de correlaciones se debe mover fs_rate*tiempoBit para encontrar
+    # cada maximo
+    
+    skip = fs//bitRate  #muestras por 1 bit.
+    bit_index = skip//2        # Indice del bit inicia en el centro de la primera señal.
+    depur = 0
+    indexDemod1 = []
+    indexDemod2 = []
+    while(bit_index < len(corr1)):
+        bitCorr1 = corr1[bit_index]
+        bitCorr2 = corr2[bit_index]
+        if( bitCorr1 > bitCorr2):
+            arrayBits.append(1)
         else:
-            y.extend(carrier2)
-    return np.array(y)
-def twos_comp(val, bits):
-    print((1 >> (bits - 1)))
-    """compute the 2's complement of int value val"""
-    if (val & (1 << (bits - 1))) != 0: # if sign bit is set e.g., 8bit: 128-255
-        val = val - (1 << bits)        # compute negative value
-    return val    
+            arrayBits.append(0)
+        bit_index = bit_index + skip
+    
+    return arrayBits
 
-#dbCut: A que amplitud cortar (diferenciar 0 de 1)
-#signal: Señal modulada en ASK
-#flag: Bandera por si se quiere o no graficar
-#bitRate: Bits leidos por segundo
-#fs: Frecuencia muestreo
-def askDemodulation(dbCut, signal, flag, bitRate, fs):
-    aux=int(len(signal)/int(len(signal)/fs*bitRate))
-    i=0
-    dmSignal=[]
-    while i<len(signal):
-        bit=signal.item(i)
-        if(signal.item(i)>dbCut):
-            dmSignal.append(1)
+
+def ask_demodulation(signal,carrier_1,carrier_2,t,fs_rate,bitRate):
+    signalTime = getSignalTime(fs_rate,signal)
+    corr1 = sg.fftconvolve(signal,carrier_1,'same')
+    # Se obtienen las correlaciones
+    corr1 = sg.medfilt(np.abs(corr1))
+    # Se genera un array vacio para almacenar los bits obtenidos.
+    arrayBits = []
+    # Para recorrer el arreglo de correlaciones se debe mover fs_rate*tiempoBit para encontrar
+    # cada maximo
+    skip = fs_rate//bitRate  # muestras por 1 bit.
+    bit_index = skip//2   # Indice del bit inicia en el centro de la primera señal.
+    print(len(corr1))
+    while(bit_index < len(corr1)):
+        bitCorr1 = corr1[bit_index]
+        bitCorr2 = max(corr1) - corr1[bit_index] 
+        if( bitCorr1 > bitCorr2):
+            arrayBits.append(1)
         else:
-            dmSignal.append(0)
-        i=i+aux
-    dmSignalAux=[]
-    j=0
-    bitAux=""
-    for bit in dmSignal:
-        if((j==32) and (bitAux!="")):
-            dmSignalAux.append(Bits(bin=bitAux).int)
-            j=0
-            bitAux=""
-        bitAux=bitAux+str(bit)
-        j=j+1
-    dmSignalAux=np.array(dmSignalAux)
-    print("DmSignalAux: ",dmSignalAux)
-    #plt.plot(dmSignalAux)
-    sin.writeWav("pruebaDigital",fs,dmSignalAux)
-    fs, signal=fileIn.openDigitalWav("pruebaDigital")
-    x,y=calcFFT(fs, signal)
-    #plotTransform(x,y,"prueba")
-    plt.show()
-    """
-    plt.figure(3)
-    dmSignalDigital=genDigitalCurveDemodulation(dmSignal, fs, bitRate)
-    plt.title("Señal Demodulada ASK")
-    plt.plot(dmSignalDigital)
-    print("Señal demodulada ASK:")
-    print(dmSignal)
-    """    
-#dbCut: A que amplitud cortar (diferenciar 0 de 1)
-#signal: Señal modulada en ASK
-#flag: Bandera por si se quiere o no graficar
-#bitRate: Bits leidos por segundo
-#fs: Frecuencia muestreo
-def plotAskDemodulation(dbCut, signal, flag, bitRate, fs):
-    dbCutVector=[dbCut]*len(signal) #Generación del vector
-    plt.figure(4)
-    plt.subplot(2,1,1)
-    plt.title("Corte de la amplitud")
-    plt.plot(signal)
-    plt.plot(dbCutVector, color="k")
+            arrayBits.append(0)
+        bit_index = bit_index + skip
 
-    plt.subplot(2,1,2)
-    plt.title("Puntos donde se analizara la amplitud")
-    #Creación del vector donde se analizara la amplitud
-    #Para calcular la mitad de cada bit
-    #Se divide el largo de la señal por la freq de muestreo,
-    #y se multiplica por la cantidad de bits por segundo
-    aux=len(signal)/fs*bitRate 
-    #Se hace un vector que va desde la mitad de la señal dividido aux,
-    #para que parta desde la mitad del primer bit, hasta 
-    #el largo de la señal dividido aux.
-    bitRateVector=range(int(int(len(signal)/aux)/2), len(signal), int(len(signal)/aux))
-    
-    plt.plot(signal)
-    for xc in bitRateVector:
-        plt.axvline(x=xc, color="k")
+    dCurve= genDigitalCurve(arrayBits, fs_rate, bitRate)
+    result = depureMachine([0,1,0,0,0,1,]*10,arrayBits)
 
-    plt.subplots_adjust(hspace = 1)
-
-    if(flag==1):
-        plt.show()
-    
-
-
-def mainDigitalDemodulation(flag, bitRate,fileName):
-    fs, signal = fileIn.openDigitalWav(fileName)
-    askDemodulation(15, signal, flag, bitRate, fs)
-    plotAskDemodulation(15, signal, flag, bitRate, fs)
-    #Demodulacion
-    
-
-
-
-mainDigitalDemodulation(1, 10, "pruebita"+"ASK")
+    if(result == 0):
+        print("Demodulacion exitosa")
+    else:
+        print("Demodulacion fallida")
