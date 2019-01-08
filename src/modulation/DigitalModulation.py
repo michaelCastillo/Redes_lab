@@ -1,13 +1,8 @@
-import math
-import sys
-import wave
-
 import numpy as np
-import scipy.io.wavfile as wavfile
+import sys
+import math
 from matplotlib import pyplot as plt
-from numpy.ma.core import concatenate
-
-
+import scipy.io.wavfile as wavfile
 sys.path.insert(0, '../SoundInterface')
 import SoundOut as sin
 sys.path.insert(0, '../Files InOut')
@@ -17,22 +12,11 @@ import warnings
 from scipy import signal as sg
 warnings.filterwarnings("ignore")
 from bitstring import Bits
+import wave as w
+import threading
 
 
-def depureMachine(digitalSignal,digitalDemodulation):
-    errors = 0
-    i = 0
-    for bit in digitalSignal:
-        if(bit != digitalDemodulation[i]):
-            errors = errors + 1
-        i = i + 1
-    if(errors != 0):
-        return float(errors)*100/float(len(digitalSignal))
-    return 0
-
-
-
-def ASK(signal, fs, bitRate, title):
+def ASK(signal, fs, bitRate, threads, title):
     t=np.arange(0, 1/bitRate, 1 / fs)
     A=2000
     B=50
@@ -40,15 +24,25 @@ def ASK(signal, fs, bitRate, title):
     
     carrier1 = A*np.cos(2*np.pi*fc*t)
     carrier2 = B*np.cos(2*np.pi*fc*t)
-    y=[]
-    for sample in signal:
-        sample = "{0:08b}".format(sample)
-        for bit in sample:
-            if(bit == "1"):
-                y.extend(carrier1)
-            else:
-                y.extend(carrier2)
-    
+    samplesPerThreads = len(signal)//threads
+    start = 0
+    end = samplesPerThreads
+    i = 0
+    # Lista de hebras
+    threadList = []
+    while i<threads:
+        # Se inicializa la hebra
+        mythread = threading.Thread(target=signalOperator, args=(start, end, signal, t, fs, i, title, carrier1, carrier2)) 
+        # Se agrega a la lista
+        threadList.append(mythread)
+        # Se inicia
+        mythread.start()
+        # El inicio aumenta en samplesPerThreads    
+        start = start + samplesPerThreads
+        # El final aumenta en samplesPerThreads
+        end = end + samplesPerThreads
+        i = i+1
+    y = []
    #Portadoras
     # plt.figure(1)
     """
@@ -62,11 +56,7 @@ def ASK(signal, fs, bitRate, title):
     plt.subplots_adjust(hspace = 1)
     #Señal
     """
-    #Se agrega ruido gausiano a la señal modulada
-    mean = 0
-    std = 1
-    noise = np.random.normal(0.0, 2000, len(y))
-    #y = y + noise
+    
     plt.figure(2)
     dCurve=genDigitalCurve(signal, fs, bitRate)
     plt.title("Señal Digital")
@@ -101,37 +91,89 @@ def getSignalTime(fs_rate, signal):
     t = np.linspace(0, tAux, signal_len)
     return t
 
-
-def FSK(signal, fs, bitRate, title):
-    
-    A=10
-    f1=fs/4+2000
-    f2=fs/4-2000
-    t=np.arange(0, 1/bitRate, 1 / fs)
-    
-    carrier1 = A*np.cos(2*np.pi*f1*t)
-    carrier2 = A*np.cos(2*np.pi*f2*t)
+def signalOperator(start, end, signal, t ,fs, i, fileName, carrier1, carrier2):
     y=[]
+    A = 10
+    f1=(fs+2000)/4 
+    f2=(fs-2000)/4 
+    # Se divide la senial de acuerdo al inicio y al final
+    signal = signal[start:end]
+    
     for sample in signal:
-        sample = "{0:08b}".format(sample)
+        sample="{0:08b}".format(sample)
         for bit in sample:
-            if(bit == "1"):
+            if (bit=="1"):
                 y.extend(carrier1)
             else:
                 y.extend(carrier2)
-
-    print("tiempo de bit: "+str(1/bitRate))
-    print("numero de muestras totales: "+str(i*len(t)))
-    print("Segundos totales!: "+str(i*len(t)/fs))
-    #Portadoras
-
-    #Señal
-    noise = np.random.normal(0.0, 5, len(y))
+    #Se agrega ruido gausiano a la señal modulada
+    mean = 0
+    std = 1
+    #noise = np.random.normal(0.0, A, len(y))
     #y = y + noise
+    # Se escribe en un archivo de salida la seccion leida
+    sin.writeWav(fileName+str(i+1), fs, np.array(y))
+    print("Hebra ", i ,"termino")
+def FSK(signal, fs, bitRate, threads, title):
+    A=10    
+    y = []
+    f1=(fs+2000)/4 #Hz
+    f2=(fs-2000)/4 #Hz
+    t=np.arange(0, 1/bitRate, 1 / fs)
+    carrier1 = A*np.cos(2*np.pi*f1*t)
+    carrier2 = A*np.cos(2*np.pi*f2*t)
+    samplesPerThreads = len(signal)//threads
+    start = 0
+    end = samplesPerThreads
+    i = 0
+    # Lista de hebras
+    threadList = []
+    while i<threads:
+        # Se inicializa la hebra
+        mythread = threading.Thread(target=signalOperator, args=(start, end, signal, t, fs, i, title, carrier1, carrier2)) 
+        # Se agrega a la lista
+        threadList.append(mythread)
+        # Se inicia
+        mythread.start()
+        # El inicio aumenta en samplesPerThreads    
+        start = start + samplesPerThreads
+        # El final aumenta en samplesPerThreads
+        end = end + samplesPerThreads
+        i = i+1
+    """
+    for sample in signal:
+        sample="{0:08b}".format(sample)
+        for bit in sample:
+            if (bit=="1"):
+                y.extend(carrier1)
+            else:
+                y.extend(carrier2)
+    #Portadoras
+    plt.figure(1)
+    plt.subplot(2,1,1)
+    plt.title("FSK Carrier "+str(f1)+" [Hz]")    
+    plt.plot(carrier1)
+    plt.subplot(2,1,2)    
+    plt.title("FSK Carrier 2 "+str(f2)+" [Hz]")    
+    plt.plot(carrier2)
+    plt.subplot(2,1,2)  
+    plt.subplots_adjust(hspace = 1)
+    #Señal
+    noise = np.random.normal(0.0, 1, len(y))
+    y = y + noise
+    plt.figure(2)
     dCurve=genDigitalCurve(signal, fs, bitRate)
+    plt.title("Señal Digital")
+    plt.subplot(2,1,1)
+    plt.plot(y)
+    plt.title(title)    
+    plt.subplot(2,1,2)
+    plt.plot(dCurve)
+    plt.subplots_adjust(hspace = 1)
     
-    
-    return np.array(signal)
+    #fsk_demodulation(y,carrier1,carrier2,t,fs,bitRate)
+    """
+    return np.array(y)
 
 def ask_demodulation(signal,carrier_1,carrier_2,t,fs_rate,bitRate):
     signalTime = getSignalTime(fs_rate,signal)
@@ -188,8 +230,8 @@ def ask_demodulation(signal,carrier_1,carrier_2,t,fs_rate,bitRate):
 
 def fsk_demodulation(signal,carrier_1,carrier_2,t,fs_rate,bitRate):
     signalTime = getSignalTime(fs_rate,signal)
-    corr1 = np.correlate(signal,carrier_1,'same')
-    corr2 = np.correlate(signal,carrier_2,'same')
+    corr1 = sg.fftconvolve(signal,carrier_1,'same')
+    corr2 = sg.fftconvolve(signal,carrier_2,'same')
     plt.figure(5)
     plt.subplot(3,1,1)
     plt.plot(t,carrier_1)
@@ -197,98 +239,87 @@ def fsk_demodulation(signal,carrier_1,carrier_2,t,fs_rate,bitRate):
     plt.plot(t,carrier_2)
 
     #Se obtienen las correlaciones
-    # corr1 = sg.medfilt(np.abs(corr1))
-    # corr2 = sg.medfilt(np.abs(corr2))
-    #Hilbert
-    corr1_raw = corr1
-    corr2_raw = corr2
-    corr1 = np.abs(sg.hilbert(corr1))
-    corr2 = np.abs(sg.hilbert(corr2))
-    
-
+    #corr1 = sg.medfilt(np.abs(corr1))
+    #corr1 = sg.medfilt(np.abs(corr1))
+    #corr2 = sg.medfilt(np.abs(corr2))
+    #corr2 = sg.medfilt(np.abs(corr2))
     #Se genera un array vacio para almacenar los bits obtenidos.
     arrayBits = []
 
     #Para recorrer el arreglo de correlaciones se debe mover fs_rate*tiempoBit para encontrar
     # cada maximo
-    
     skip = fs_rate//bitRate  #muestras por 1 bit.
-    print("Skip "+str(skip))
     bit_index = skip//2        # Indice del bit inicia en el centro de la primera señal.
     print(len(corr1))
     print(type(bit_index))
     depur = 0
-    indexDemod1 = []
-    indexDemod2 = []
     while(bit_index < len(corr1)):
         bitCorr1 = corr1[bit_index]
         bitCorr2 = corr2[bit_index]
         if( bitCorr1 > bitCorr2):
             arrayBits.append(1)
-            indexDemod1.append(bit_index)
         else:
-            indexDemod2.append(bit_index)
             arrayBits.append(0)
         bit_index = bit_index + skip
     print(str(arrayBits))
-    
-
-    valuesToPointCorr1 = [0]*int(len(corr1))
-    valuesToPointCorr2 = [0]*int(len(corr2))
-    for i in indexDemod1:
-        valuesToPointCorr1[i] = corr1[i]
-    i = 0
-    for i in indexDemod2:
-        valuesToPointCorr2[i] = corr2[i]
-
-
-
-
-
-    # plt.figure(6)
+    result = depureMachine([0,1,0,0,0,1,]*10,arrayBits)
+    if(result == 0):
+        print("Demodulacion exitosa")
+    else:
+        print("Demodulacion fallida")
     plt.figure(6)
     plt.subplot(3,1,1)
-    plt.title("Hilbert portadora 1")
-    # plt.plot(signalTime,np.abs(corr1_raw))
-    plt.plot(signalTime,np.abs(valuesToPointCorr1),"*-")
-    plt.plot(signalTime,np.abs(valuesToPointCorr2),"*-",color="red")
-    plt.plot(signalTime,corr1,color="green")
+    plt.plot(signalTime,corr1)
     plt.subplot(3,1,2)
-    plt.title("Hilbert portadora 2")
-    plt.plot(signalTime,np.abs(valuesToPointCorr2),"*-")
-    plt.plot(signalTime,np.abs(valuesToPointCorr1),"*-",color="red")
-    plt.plot(signalTime,corr2,color="green")
+    plt.plot(signalTime,corr2)
     plt.show()
-    return arrayBits
 
 def toBinary(x):
     x=Bits(int=x, length=32)
     return x.bin
 
-
+def depureMachine(digitalSignal,digitalDemodulation):
+    if(len(digitalSignal) != len(digitalDemodulation)):
+        print("Las señales son diferentes! ")
+        return 1
+    else:
+        i = 0
+        for bit in digitalSignal:
+            if(bit != digitalDemodulation[i]):
+                print("Las señales son diferentes! ")
+                return 1
+            i = i + 1
+    print("Las señales son iguales! ")
+    return 0
 
 
 def mainDigitalModulation(modType,flag,fileName):
-    flagTest=True
+    flagTest=False
     test=[]
     binarySignal=[]
-    trenBinaries = []
-    if(flagTest):
-        fs, signal = FD.openDigitalWav(fileName)
-        waveData = wave.open("../../Wav/"+fileName+".wav","rb")
-        byteSignal = waveData.readframes(waveData.getnframes())
-        for i in byteSignal:
-            binaryValue = '{0:08b}'.format(i)
-            binList = list(binaryValue)
-            binList = list(map(int, binList))
-            np.concatenate((binarySignal,np.array(binList)),axis=0)
-        print(len(binarySignal)) ##HAy que concatenar los arrays
+    if(flagTest):  
+        """
+        #signal=signal[0:1000]
+        print("Original: ", signal)
+        print(len(signal))
+        binaryFunc = np.vectorize(toBinary)
+        binarySignalAux=binaryFunc(signal)
+        maxBinaryLenght=len("{0:b}".format((max(signal))))
         
-        
-
+        for index, value in enumerate(binarySignalAux):
+            i=len(str(value))
+            while i<maxBinaryLenght:
+                binarySignal.append(0)
+                i=i+1
+            for bit in value:
+                binarySignal.append(int(bit))
+        binarySignal=np.array(binarySignal)
+        """
+        fs, signal = wavfile.read("../../Wav/"+fileName+".wav")
+        test=w.open("../../Wav/"+fileName+".wav", "rb")
+        test=test.readframes(test.getnframes())
     else:
         test=[0,1,0,0,0,1]*1000
-        print(test)
         plt.figure(4)
         plt.subplot(3,1,1)
         plt.plot(test)
@@ -297,27 +328,24 @@ def mainDigitalModulation(modType,flag,fileName):
         #plt.plot(t,carrier_2)
         #plt.title("Carrier 2")
         #plt.subplots_adjust(hspace = 1)
-        fs = 40000 #Frecuencia de muestreo en Hz
-    
-    bitRate=1000 #Bit por segundo
-
-    """
+        fs = 1000 #Frecuencia de muestreo en Hz
+    fs=10000
+    bitRate=100 #Bit por segundo
+    threads = int(input("Ingrese cantidad de hebras: "))
     y=np.array([])    
     if(modType=="ASK"):
         #Funcion que modula
-        y=ASK(test, fs, bitRate, title="ASK "+fileName)
+        y=ASK(test, fs, bitRate,threads,  title="ASK "+fileName)
 
     #FSK
     if(modType=="FSK"):
         #Funcion que modula
-        print("Binary Signal => "+str(binarySignal))
-        y=FSK(test, fs, bitRate, title="FSK "+fileName)
-    #Escribir archivo .wav
-    
-    sin.writeWav(fileName+modType, fs, y)
+        print("COMENZANDO MODULACION")
+        y=FSK(test, fs, bitRate, threads, title="FSK "+fileName)
+    #sin.writeWav(fileName+modType, fs, y)
     plt.show()
     #Plot de correlacionadores
     #demodulacion FSK
     #DDemodulation.mainDigitalDemodulation(flag, bitRate, fileName+modType)
-    """
-mainDigitalModulation("FSK",1,"handel")
+
+mainDigitalModulation("ASK",1,"handel")

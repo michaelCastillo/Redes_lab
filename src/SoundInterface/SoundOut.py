@@ -21,4 +21,10 @@ def writeWav(fileName, rate, data):
     #data=data.astype(np.int32)
     #print("Señal a escribir: ",data)
     wavfile.write("../../Wav/"+fileName+".wav", rate, data)
-   
+def linkWavFiles(threads, title):
+        i = 0
+        y = []
+        while i<threads:
+                fs, signal = wavfile.read("../../Wav/"+title+str(i+1)+".wav")
+                y.extend(signal)
+        wavfile.write("../../Wav/"+title+"Final"+".wav", fs, y)
