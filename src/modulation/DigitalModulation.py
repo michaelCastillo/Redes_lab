@@ -211,8 +211,9 @@ def fsk_demodulation(signal,carrier_1,carrier_2,t,fs_rate,bitRate):
 
     #Para recorrer el arreglo de correlaciones se debe mover fs_rate*tiempoBit para encontrar
     # cada maximo
+    
     skip = fs_rate//bitRate  #muestras por 1 bit.
-    print("numero de bits: "+str(len(corr1)/skip))
+    print("Skip "+str(skip))
     bit_index = skip//2        # Indice del bit inicia en el centro de la primera señal.
     print(len(corr1))
     print(type(bit_index))
@@ -319,4 +320,4 @@ def mainDigitalModulation(modType,flag,fileName):
     #demodulacion FSK
     #DDemodulation.mainDigitalDemodulation(flag, bitRate, fileName+modType)
     """
-mainDigitalModulation("FSK",1,"pasoDigital")
+mainDigitalModulation("FSK",1,"handel")
