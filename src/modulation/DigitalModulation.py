@@ -123,6 +123,97 @@ def signalOperator(start, end, signal, t ,fs, i, fileName, carrier1, carrier2):
     sin.writeWav(fileName+str(i+1), fs, np.array(y))
     print("Hebra ", i ,"termino")
 
+def signalOperatorQfsk(start, end, signal, t ,fs, i, fileName, carrier1, carrier2,carrier3,carrier4,barrier):
+    y=[]
+    # Se divide la senial de acuerdo al inicio y al final
+    signal = signal[start:end]
+    
+    for sample in signal:
+        sample="{0:08b}".format(sample)
+        symbolIndex = 1
+        buff = ""
+        for bit in sample:
+            buff = buff + bit
+            if (symbolIndex%2 == 0):
+                if (buff =="00"):
+                    y.extend(carrier1)
+                elif (buff=="01"):
+                    y.extend(carrier2)
+                elif (buff=="10"):
+                    y.extend(carrier3)
+                else:
+                    y.extend(carrier4)   ##11
+                buff = ""
+            symbolIndex = symbolIndex + 1
+    #Se agrega ruido gausiano a la señal modulada
+    mean = 0
+    std = 1
+    #noise = np.random.normal(0.0, A, len(y))
+    #y = y + noise
+    # Se escribe en un archivo de salida la seccion leida
+    barrier.wait()
+
+    sin.writeWav(fileName+str(i+1), fs, np.array(y))
+    print("Hebra ", i ,"termino")
+
+def QFSK(signal, fs, bitRate, threads, title):
+    
+    plot = False
+    signalModulated=[]
+    A=10    
+    y = []
+    f1= 15000
+    f2= 2000
+    fs = 5*f1
+    t=np.arange(0, 1/bitRate, 1 / fs)
+    carrier1 = A*np.cos(2*np.pi*f1*t)
+    carrier2 = A*np.cos(2*np.pi*f2*t)
+    carrier3 = A*np.sin(2*np.pi*f1*t)
+    carrier4 = A*np.sin(2*np.pi*f2*t)
+    samplesPerThreads = len(signal)//threads
+    start = 0
+    end = samplesPerThreads
+    i = 0
+    # Lista de hebras
+    barrier = threading.Barrier(threads)
+    threadList = []
+    while i<threads:
+        # Se inicializa la hebra
+        mythread = threading.Thread(target=signalOperatorQfsk, args=(start, end, signal, t, fs, i, title, carrier1, carrier2,carrier3,carrier4,barrier)) 
+        # Se agrega a la lista
+        threadList.append(mythread)
+        # Se inicia
+        mythread.start()
+        # El inicio aumenta en samplesPerThreads    
+        start = start + samplesPerThreads
+        # El final aumenta en samplesPerThreads
+        end = end + samplesPerThreads
+        i = i+1
+
+    
+    
+    print("Inicio de ploteo")
+    if(plot):
+        #Grafica de las portadoras
+        lenCarriers = len(carrier1)
+        lenTime = len(t)
+        plt.figure(1)
+        plt.subplot(2,2,1)
+        oPlot.plotSignalTime(carrier1[0:lenCarriers//8],t[0:lenTime//8],"Portadora (1)",False)
+        plt.subplot(2,2,2)
+        oPlot.plotSignalTime(carrier2[0:lenCarriers//8],t[0:lenTime//8],"Portadora (0) ",False)
+        plt.subplot(2,2,3)
+        oPlot.plotSignalTime(carrier3[0:lenCarriers//8],t[0:lenTime//8],"Portadora (1)",False)
+        plt.subplot(2,2,4)
+        oPlot.plotSignalTime(carrier4[0:lenCarriers//8],t[0:lenTime//8],"Portadora (0) ",False)
+        #Grafica de la señal modulada
+        plt.figure(2)
+        oPlot.plotSignalTime()
+    
+    #Demodulacion
+
+
+
 def FSK(signal, fs, bitRate, threads, title):
     
     plot = False
@@ -139,6 +230,7 @@ def FSK(signal, fs, bitRate, threads, title):
     start = 0
     end = samplesPerThreads
     i = 0
+    barrier = threading.Barrier(threads, timeout = printTimeoutBarrier)
     # Lista de hebras
     threadList = []
     while i<threads:
@@ -153,54 +245,34 @@ def FSK(signal, fs, bitRate, threads, title):
         # El final aumenta en samplesPerThreads
         end = end + samplesPerThreads
         i = i+1
-
+    barrier.wait()
+    
     if(plot):
         #Grafica de las portadoras
         plt.figure(1)
         plt.subplot(3,1,1)
-        oPlot.plotSignalTime(carrier1,t,"Portadora (1)",False)
+        lenCarriers = len(carrier1)
+        oPlot.plotSignalTime(carrier1[0:lenCarriers//4],t,"Portadora (1)",False)
         plt.subplot(3,1,2)
-        oPlot.plotSignalTime(carrier2,t,"Portadora (0) ",False)
+        oPlot.plotSignalTime(carrier1[0:lenCarriers//4],t,"Portadora (0) ",False)
         #Grafica de la señal modulada
+
+def printTimeoutBarrier():
+    print("Se ha agotado el tiempo para que lleguen las threads")
 
 
 def mainDigitalModulation(modType,flag,fileName):
-    flagTest=False
+    flagTest=True
     test=[]
     binarySignal=[]
-    if(flagTest):  
-        """
-        #signal=signal[0:1000]
-        print("Original: ", signal)
-        print(len(signal))
-        binaryFunc = np.vectorize(toBinary)
-        binarySignalAux=binaryFunc(signal)
-        maxBinaryLenght=len("{0:b}".format((max(signal))))
-        
-        for index, value in enumerate(binarySignalAux):
-            i=len(str(value))
-            while i<maxBinaryLenght:
-                binarySignal.append(0)
-                i=i+1
-            for bit in value:
-                binarySignal.append(int(bit))
-        binarySignal=np.array(binarySignal)
-        """
+    if(not flagTest):  
         fs, signal = wavfile.read("../../Wav/"+fileName+".wav")
         test=w.open("../../Wav/"+fileName+".wav", "rb")
         test=test.readframes(test.getnframes())
     else:
         test=[0,1,0,0,0,1]*1000
-        plt.figure(4)
-        plt.subplot(3,1,1)
-        plt.plot(test)
-        plt.title("test")
-        #plt.subplot(3,1,2)
-        #plt.plot(t,carrier_2)
-        #plt.title("Carrier 2")
-        #plt.subplots_adjust(hspace = 1)
         fs = 1000 #Frecuencia de muestreo en Hz
-    fs=10000
+    fs=1000
     bitRate=100 #Bit por segundo
     threads = int(input("Ingrese cantidad de hebras: "))
     y=np.array([])    
@@ -213,10 +285,24 @@ def mainDigitalModulation(modType,flag,fileName):
         #Funcion que modula
         print("COMENZANDO MODULACION")
         y=FSK(test, fs, bitRate, threads, title="FSK "+fileName)
+    if (modType == "QFSK"):
+        demodulation = True
+        if(not demodulation):
+            y = QFSK(test, fs, bitRate, threads, title="QFSK "+fileName)
+        ##Demodulacion de 1 parte de la senal.
+        else:
+            print("Demodulacion! ")
+            test=w.open("../../Wav/QFSK "+fileName+"1.wav", "rb")
+            test=test.readframes(test.getnframes())
+            demod.qam_demodulation(test,15000,2000,15000*5,bitRate)
+        
+
+
+
     #sin.writeWav(fileName+modType, fs, y)
     plt.show()
     #Plot de correlacionadores
     #demodulacion FSK
     #DDemodulation.mainDigitalDemodulation(flag, bitRate, fileName+modType)
 
-mainDigitalModulation("ASK",1,"handel")
+mainDigitalModulation("QFSK",1,"handel")

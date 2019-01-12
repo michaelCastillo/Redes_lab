@@ -81,6 +81,75 @@ def fsk_demodulation(signal,f1,f2,fs,bitRate):
     return arrayBits
 
 
+
+def qam_demodulation(signal,f1,f2,fs,baudrate):
+
+    plot = False
+
+    A=10
+    f1 = 15000
+    f2 = 2000
+    t=np.arange(0, 1/baudrate, 1 / fs)
+    carrier1 = A*np.cos(2*np.pi*f1*t)
+    carrier2 = A*np.cos(2*np.pi*f2*t)
+    carrier3 = A*np.sin(2*np.pi*f1*t)
+    carrier4 = A*np.sin(2*np.pi*f2*t)
+    signal = signal[0:len(signal)//8]
+    print("error")  ##Aqui esta el error! 
+    corr1 = np.correlate(signal,carrier1,'same')
+    corr2 = np.correlate(signal,carrier2,'same')
+    corr3 = np.correlate(signal,carrier3,'same')
+    corr4 = np.correlate(signal,carrier4,'same')
+
+    corr1 = np.abs(corr1)
+    corr2 = np.abs(corr2)
+    corr3 = np.abs(corr3)
+    corr4 = np.abs(corr4)
+    print("He realizado las correlaciones! Grafico.")
+    if(plot):
+        plt.figure(2)
+        plt.subplot(2,1,1)
+        plt.plot(corr1[0:10000])
+        plt.subplot(2,1,2)
+        plt.plot(corr2[0:10000])
+        
+   
+    print("Transformadas calculadas")
+    
+    
+    arrayBits = []
+
+    #Se genera un array vacio para almacenar los bits obtenidos.
+    #Para recorrer el arreglo de correlaciones se debe mover fs_rate*tiempoBit para encontrar
+    # cada maximo
+    
+    skip = fs//baudrate  #muestras por 1 bit.
+    bit_index = skip//2        # Indice del bit inicia en el centro de la primera señal.
+    while(bit_index < len(corr1)):
+        bitCorr1 = corr1[bit_index]
+        bitCorr2 = corr2[bit_index]
+        bitCorr3 = corr3[bit_index]
+        bitCorr4 = corr4[bit_index]
+
+        op_corr1 = (bitCorr1 > bitCorr2) and (bitCorr1 > bitCorr3) and (bitCorr1 > bitCorr4)
+        op_corr2 = (bitCorr2 > bitCorr3) and (bitCorr2 > bitCorr4) and (bitCorr2 > bitCorr1)
+        op_corr3 = (bitCorr3 > bitCorr2) and (bitCorr3 > bitCorr1) and (bitCorr3 > bitCorr4)
+        op_corr4 = (bitCorr4 > bitCorr1) and (bitCorr4 > bitCorr2) and (bitCorr4 > bitCorr3)
+
+        if(op_corr1):
+            (arrayBits.append(0)).append(0)
+        elif(op_corr2):
+            (arrayBits.append(0)).append(1)
+        elif(op_corr3):
+            (arrayBits.append(1)).append(0)
+        else:
+            (arrayBits.append(1)).append(1)
+            
+        bit_index = bit_index + skip
+    return arrayBits
+
+
+
 def ask_demodulation(signal,carrier_1,carrier_2,t,fs_rate,bitRate):
     signalTime = getSignalTime(fs_rate,signal)
     corr1 = sg.fftconvolve(signal,carrier_1,'same')
