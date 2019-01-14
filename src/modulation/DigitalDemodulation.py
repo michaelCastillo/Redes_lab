@@ -30,6 +30,20 @@ def depureMachine(digitalSignal,digitalDemodulation):
         return float(errors)*100/float(len(digitalSignal))
     return 0
 
+def depureMachineSecuential(digitalSignal,digitalDemodulation):
+    errors = 0
+    i = 0
+    for bit in digitalSignal:
+        bit = int(bit)
+        if(bit != digitalDemodulation[i]):
+            errors = errors + 1
+        i = i + 1
+    if(errors != 0):
+        return float(errors)*100/float(len(digitalSignal))
+    return 0
+
+
+
 
 def fsk_demodulation(signal,f1,f2,fs,bitRate):
     plot = False
@@ -95,7 +109,7 @@ def qam_demodulation(signal,f1,f2,fs,baudrate):
     carrier3 = A*np.sin(2*np.pi*f1*t)
     carrier4 = A*np.sin(2*np.pi*f2*t)
     signal = signal[0:len(signal)//8]
-    print("error")  ##Aqui esta el error! 
+    
     corr1 = np.correlate(signal,carrier1,'same')
     corr2 = np.correlate(signal,carrier2,'same')
     corr3 = np.correlate(signal,carrier3,'same')
@@ -137,13 +151,17 @@ def qam_demodulation(signal,f1,f2,fs,baudrate):
         op_corr4 = (bitCorr4 > bitCorr1) and (bitCorr4 > bitCorr2) and (bitCorr4 > bitCorr3)
 
         if(op_corr1):
-            (arrayBits.append(0)).append(0)
+            arrayBits.append(0)
+            arrayBits.append(0)
         elif(op_corr2):
-            (arrayBits.append(0)).append(1)
+            arrayBits.append(0)
+            arrayBits.append(1)
         elif(op_corr3):
-            (arrayBits.append(1)).append(0)
+            arrayBits.append(1)
+            arrayBits.append(0)
         else:
-            (arrayBits.append(1)).append(1)
+            arrayBits.append(1)
+            arrayBits.append(1)
             
         bit_index = bit_index + skip
     return arrayBits
@@ -178,3 +196,6 @@ def ask_demodulation(signal,carrier_1,carrier_2,t,fs_rate,bitRate):
         print("Demodulacion exitosa")
     else:
         print("Demodulacion fallida")
+
+
+    

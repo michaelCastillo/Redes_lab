@@ -213,6 +213,60 @@ def QFSK(signal, fs, bitRate, threads, title):
     #Demodulacion
 
 
+def QFSKSecuential(signal, fs, bitRate, threads, title):
+    
+    plot = False
+    signalModulated=[]
+    A=10    
+    y = []
+    f1= 15000
+    f2= 2000
+    fs = 5*f1
+    t=np.arange(0, 1/bitRate, 1 / fs)
+    carrier1 = A*np.cos(2*np.pi*f1*t)
+    carrier2 = A*np.cos(2*np.pi*f2*t)
+    carrier3 = A*np.sin(2*np.pi*f1*t)
+    carrier4 = A*np.sin(2*np.pi*f2*t)
+    y = []
+    for sample in signal:
+        sample="{0:08b}".format(sample)
+        symbolIndex = 1
+        buff = ""
+        for bit in sample:
+            buff = buff + bit
+            if (symbolIndex%2 == 0):
+                if (buff =="00"):
+                    y.extend(carrier1)
+                elif (buff=="01"):
+                    y.extend(carrier2)
+                elif (buff=="10"):
+                    y.extend(carrier3)
+                else:
+                    y.extend(carrier4)   ##11
+                buff = ""
+            symbolIndex = symbolIndex + 1
+    
+    
+    print("Inicio de ploteo")
+    if(plot):
+        #Grafica de las portadoras
+        lenCarriers = len(carrier1)
+        lenTime = len(t)
+        plt.figure(1)
+        plt.subplot(2,2,1)
+        oPlot.plotSignalTime(carrier1[0:lenCarriers//8],t[0:lenTime//8],"Portadora (00)",False)
+        plt.subplot(2,2,2)
+        oPlot.plotSignalTime(carrier2[0:lenCarriers//8],t[0:lenTime//8],"Portadora (01) ",False)
+        plt.subplot(2,2,3)
+        oPlot.plotSignalTime(carrier3[0:lenCarriers//8],t[0:lenTime//8],"Portadora (10)",False)
+        plt.subplot(2,2,4)
+        oPlot.plotSignalTime(carrier4[0:lenCarriers//8],t[0:lenTime//8],"Portadora (11) ",False)
+        #Grafica de la señal modulada
+        plt.figure(2)
+        timeModulated = getSignalTime(fs,y)
+        oPlot.plotSignalTime(y,timeModulated,"Senal modulada",False)
+    return y
+    #Demodulacion
 
 def FSK(signal, fs, bitRate, threads, title):
     
@@ -273,7 +327,7 @@ def mainDigitalModulation(modType,flag,fileName):
         test=[0,1,0,0,0,1]*1000
         fs = 1000 #Frecuencia de muestreo en Hz
     fs=1000
-    bitRate=100 #Bit por segundo
+    bitRate=1000 #Bit por segundo
     threads = int(input("Ingrese cantidad de hebras: "))
     y=np.array([])    
     if(modType=="ASK"):
@@ -286,16 +340,22 @@ def mainDigitalModulation(modType,flag,fileName):
         print("COMENZANDO MODULACION")
         y=FSK(test, fs, bitRate, threads, title="FSK "+fileName)
     if (modType == "QFSK"):
-        demodulation = True
+        demodulation = False
         if(not demodulation):
-            y = QFSK(test, fs, bitRate, threads, title="QFSK "+fileName)
+            if(not flagTest):
+                y  = QFSKSecuential(test,fs,bitRate,0,"QFSK secuencial")
+            else:
+                y = QFSKSecuential(test, fs, bitRate, threads, title="QFSK "+fileName)
+                #print("Signal => "+str(y))
+                demodulation = demod.qam_demodulation(y,15000,2000,15000*5,bitRate)
+                print("Se inicia el depur")
+                demod.depureMachine(test,demodulation)
         ##Demodulacion de 1 parte de la senal.
         else:
             print("Demodulacion! ")
             test=w.open("../../Wav/QFSK "+fileName+"1.wav", "rb")
             test=test.readframes(test.getnframes())
             demod.qam_demodulation(test,15000,2000,15000*5,bitRate)
-        
 
 
 
