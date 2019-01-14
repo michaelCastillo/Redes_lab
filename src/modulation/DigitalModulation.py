@@ -217,34 +217,35 @@ def QFSKSecuential(signal, fs, bitRate, threads, title):
     
     plot = False
     signalModulated=[]
-    A=10    
+    A=1
     y = []
-    f1= 15000
-    f2= 2000
+    f1 = 16000
+    f2 = 12000
+    f3 = 8000
+    f4 = 4000
     fs = 5*f1
     t=np.arange(0, 1/bitRate, 1 / fs)
     carrier1 = A*np.cos(2*np.pi*f1*t)
-    carrier2 = A*np.cos(2*np.pi*f2*t)
+    carrier2 = A*np.cos(2*np.pi*f4*t)
     carrier3 = A*np.sin(2*np.pi*f1*t)
-    carrier4 = A*np.sin(2*np.pi*f2*t)
+    carrier4 = A*np.sin(2*np.pi*f4*t)
     y = []
-    for sample in signal:
-        sample="{0:08b}".format(sample)
-        symbolIndex = 1
-        buff = ""
-        for bit in sample:
-            buff = buff + bit
-            if (symbolIndex%2 == 0):
-                if (buff =="00"):
-                    y.extend(carrier1)
-                elif (buff=="01"):
-                    y.extend(carrier2)
-                elif (buff=="10"):
-                    y.extend(carrier3)
-                else:
-                    y.extend(carrier4)   ##11
-                buff = ""
-            symbolIndex = symbolIndex + 1
+    symbolIndex = 1
+    buff = ""
+    for bit in signal:
+        buff = buff + str(bit)
+        if (symbolIndex%2 == 0):
+            #print(buff)
+            if (buff =="00"):
+                y.extend(carrier1)
+            elif (buff=="01"):
+                y.extend(carrier2)
+            elif (buff=="10"):
+                y.extend(carrier3)
+            else:
+                y.extend(carrier4)   ##11
+            buff = ""
+        symbolIndex = symbolIndex + 1
     
     
     print("Inicio de ploteo")
@@ -267,6 +268,10 @@ def QFSKSecuential(signal, fs, bitRate, threads, title):
         oPlot.plotSignalTime(y,timeModulated,"Senal modulada",False)
     return y
     #Demodulacion
+
+
+
+
 
 def FSK(signal, fs, bitRate, threads, title):
     
@@ -324,38 +329,42 @@ def mainDigitalModulation(modType,flag,fileName):
         test=w.open("../../Wav/"+fileName+".wav", "rb")
         test=test.readframes(test.getnframes())
     else:
-        test=[0,1,0,0,0,1]*1000
-        fs = 1000 #Frecuencia de muestreo en Hz
-    fs=1000
-    bitRate=1000 #Bit por segundo
+        test=np.random.randint(2, size=1000000)
+
+    baudRate=5000
     threads = int(input("Ingrese cantidad de hebras: "))
     y=np.array([])    
-    if(modType=="ASK"):
-        #Funcion que modula
-        y=ASK(test, fs, bitRate,threads,  title="ASK "+fileName)
 
-    #FSK
+    fs = 10
+    if(modType=="ASK"):
+        y=ASK(test, fs, baudRate,threads,  title="ASK "+fileName)
     if(modType=="FSK"):
-        #Funcion que modula
         print("COMENZANDO MODULACION")
-        y=FSK(test, fs, bitRate, threads, title="FSK "+fileName)
+        y=FSK(test, fs, baudRate, threads, title="FSK "+fileName)
+
     if (modType == "QFSK"):
         demodulation = False
         if(not demodulation):
             if(not flagTest):
-                y  = QFSKSecuential(test,fs,bitRate,0,"QFSK secuencial")
+                y  = QFSKSecuential(test,fs,baudRate,0,"QFSK secuencial")
             else:
-                y = QFSKSecuential(test, fs, bitRate, threads, title="QFSK "+fileName)
+                print("######### Modulacion #############")
+                y = QFSKSecuential(test, fs, baudRate, threads, title="QFSK "+fileName)
+                noise = np.random.normal(0.0, 1, len(y))
+                y = y + noise
                 #print("Signal => "+str(y))
-                demodulation = demod.qam_demodulation(y,15000,2000,15000*5,bitRate)
-                print("Se inicia el depur")
-                demod.depureMachine(test,demodulation)
+                print("######### Demodulacion ###########")
+                demodulation = demod.qam_demodulation(y,baudRate)
+                print("#########   Testing   ############")
+                result = demod.depureMachineSecuential(test,demodulation)
+                print("Tasa de error: "+str(result)+"%")
+                print("#########  Fin testing  #########")
         ##Demodulacion de 1 parte de la senal.
         else:
             print("Demodulacion! ")
             test=w.open("../../Wav/QFSK "+fileName+"1.wav", "rb")
             test=test.readframes(test.getnframes())
-            demod.qam_demodulation(test,15000,2000,15000*5,bitRate)
+            demod.qam_demodulation(test,15000,2000,15000*5,baudRate)
 
 
 
@@ -364,5 +373,8 @@ def mainDigitalModulation(modType,flag,fileName):
     #Plot de correlacionadores
     #demodulacion FSK
     #DDemodulation.mainDigitalDemodulation(flag, bitRate, fileName+modType)
+
+
+
 
 mainDigitalModulation("QFSK",1,"handel")

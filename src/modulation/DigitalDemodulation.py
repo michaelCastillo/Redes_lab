@@ -31,16 +31,18 @@ def depureMachine(digitalSignal,digitalDemodulation):
     return 0
 
 def depureMachineSecuential(digitalSignal,digitalDemodulation):
+    print("lens => "+str(len(digitalDemodulation))+"  "+str(len(digitalDemodulation)))
     errors = 0
     i = 0
     for bit in digitalSignal:
-        bit = int(bit)
         if(bit != digitalDemodulation[i]):
             errors = errors + 1
         i = i + 1
     if(errors != 0):
         return float(errors)*100/float(len(digitalSignal))
     return 0
+
+    
 
 
 
@@ -96,19 +98,23 @@ def fsk_demodulation(signal,f1,f2,fs,bitRate):
 
 
 
-def qam_demodulation(signal,f1,f2,fs,baudrate):
+def qam_demodulation(signal,baudrate):
 
-    plot = False
+    plot = True
 
-    A=10
-    f1 = 15000
-    f2 = 2000
+    
+    A=1
+    f1 = 16000
+    f2 = 12000
+    f3 = 8000
+    f4 = 4000
+    fs = f1*5
     t=np.arange(0, 1/baudrate, 1 / fs)
     carrier1 = A*np.cos(2*np.pi*f1*t)
-    carrier2 = A*np.cos(2*np.pi*f2*t)
+    carrier2 = A*np.cos(2*np.pi*f4*t)
     carrier3 = A*np.sin(2*np.pi*f1*t)
-    carrier4 = A*np.sin(2*np.pi*f2*t)
-    signal = signal[0:len(signal)//8]
+    carrier4 = A*np.sin(2*np.pi*f4*t)
+    #signal = signal[0:len(signal)//8]
     
     corr1 = np.correlate(signal,carrier1,'same')
     corr2 = np.correlate(signal,carrier2,'same')
@@ -122,11 +128,14 @@ def qam_demodulation(signal,f1,f2,fs,baudrate):
     print("He realizado las correlaciones! Grafico.")
     if(plot):
         plt.figure(2)
-        plt.subplot(2,1,1)
-        plt.plot(corr1[0:10000])
-        plt.subplot(2,1,2)
-        plt.plot(corr2[0:10000])
-        
+        plt.subplot(2,2,1)
+        plt.plot(corr1[0:10000],label="Corr 00")
+        plt.subplot(2,2,2)
+        plt.plot(corr2[0:10000],label="Corr 01")
+        plt.subplot(2,2,3)
+        plt.plot(corr3[0:10000],label="Corr 10")
+        plt.subplot(2,2,4)
+        plt.plot(corr4[0:10000],label="Corr 11")
    
     print("Transformadas calculadas")
     
