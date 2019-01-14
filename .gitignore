@@ -99,6 +99,6 @@ venv.bak/
 
 # mkdocs documentation
 /site
-
+/Wav
 # mypy
 .mypy_cache/
