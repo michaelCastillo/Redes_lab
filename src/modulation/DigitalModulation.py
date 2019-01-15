@@ -427,33 +427,27 @@ def writeWav(path,data,params):
     arrayBytes = parseDataToBytes(data)
     output = w.open(path,'wb')
     print("parametros: "+str(params))
-    print("bytes => "+str(arrayBytes))
-    output.setparams(params)
+
+    output.setparams(tuple(params))
     output.writeframesraw(arrayBytes)
     output.close()
 
 def parseDataToBytes(data):
-    test = True
-    if(test):
-        buffer = ""
-        for bit in data:
-            buffer = buffer + str(bit)
-        dataOnBytes = "0x%x" % int(buffer, 2)
-        
-        return dataOnBytes.encode()
 
-    else:
-
-        i = 1
-        bytesArray = []
-        byteBuff = ""
-        for bit in data :
-            byteBuff = byteBuff + str(bit)
-            if( (i%8) == 0):
-                byteValue = convertStringToByte(byteBuff)
-                bytesArray.append(byteValue)
-            i = i + 1
-        return bytesArray
+    i = 1
+    bytesArray = []
+    byteBuff = ""
+ 
+    for bit in data :
+        byteBuff = byteBuff + str(bit)
+        if( (i%8) == 0):
+            #byteValue = convertStringToByte(byteBuff)
+            byteValue = int(byteBuff,2)
+            bytesArray.append(byteValue)
+            byteBuff = ""
+        i = i + 1
+    #print(bytearray(bytesArray))
+    return bytearray(bytesArray)
 
 def convertStringToByte(string):
     string = "0x%x" % (int(string, 2))
@@ -462,4 +456,4 @@ def convertStringToByte(string):
 
 
 result=[]
-mainDigitalModulation("QFSK",1,"handel")
+mainDigitalModulation("QFSK",1,"mario")
