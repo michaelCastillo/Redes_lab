@@ -427,6 +427,7 @@ def writeWav(path,data,params):
     arrayBytes = parseDataToBytes(data)
     output = w.open(path,'wb')
     print("parametros: "+str(params))
+    print("bytes => "+str(arrayBytes))
     output.setparams(params)
     output.writeframesraw(arrayBytes)
     output.close()
@@ -461,4 +462,4 @@ def convertStringToByte(string):
 
 
 result=[]
-mainDigitalModulation("QFSK",1,"mario")
+mainDigitalModulation("QFSK",1,"handel")
