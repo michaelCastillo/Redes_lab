@@ -17,6 +17,7 @@ def getSignalTime(fs_rate, signal):
 
 
 def depureMachine(digitalSignal,digitalDemodulation):
+    print("tamano audio: "+str(len(digitalSignal)) + "  demod: "+str(len(digitalDemodulation)))
     errors = 0
     i = 0
     for byte in digitalSignal:
@@ -27,7 +28,7 @@ def depureMachine(digitalSignal,digitalDemodulation):
                 errors = errors + 1
             i = i + 1
     if(errors != 0):
-        return float(errors)*100/float(len(digitalSignal))
+        return float(errors)*100/float(len(digitalSignal)*8)
     return 0
 
 def depureMachineSecuential(digitalSignal,digitalDemodulation):
@@ -100,7 +101,7 @@ def fsk_demodulation(signal,f1,f2,fs,bitRate):
 
 def qam_demodulation(signal,baudrate):
 
-    plot = True
+    plot = False
 
     
     A=1
