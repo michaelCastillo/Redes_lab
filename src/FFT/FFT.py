@@ -8,7 +8,7 @@ from scipy import integrate, fft
 import numpy as np
 from matplotlib import pyplot as plt
 from scipy.interpolate import interp1d
-sys.path.insert(0, '../Plot')
+sys.path.insert(0, '../')
 import Plot as oPlot
 #CALCULO DE LA TRANSFORMADA DE FOURIER
 def calcFFT(fs_rate, signal):

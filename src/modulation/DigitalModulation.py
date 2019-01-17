@@ -287,6 +287,9 @@ def QFSKSecuential(signal, fs, bitRate, title,audio):
     # plt.figure(2)
     # timeModulated = getSignalTime(fs,y)
     # oPlot.plotSignalTime(y[0:len(signal)//16],timeModulated[0:len(signal)//16],"Senal modulada",False)
+    y.extend(initSignal)
+    y.extend(initSignal)
+    y.extend(initSignal)
     return y
     #Demodulacion
 
