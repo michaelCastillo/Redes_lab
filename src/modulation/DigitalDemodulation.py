@@ -109,8 +109,8 @@ def qam_demodulation(signal,baudrate):
     
     A=1
     f1 = 10000
-    f4 = 4000
-    fs = f1*6
+    f4 = 5000
+    fs = 14000*6 ##Debido a la senal de inicio
     t=np.arange(0, 1/baudrate, 1 / fs)
     carrier1 = A*np.cos(2*np.pi*f1*t)
     carrier2 = A*np.cos(2*np.pi*f4*t)

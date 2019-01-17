@@ -163,7 +163,9 @@ def QFSK(signal, fs, bitRate, threads, title):
     carrier2 = A*np.cos(2*np.pi*f4*t)
     carrier3 = A*np.sin(2*np.pi*f1*t)
     carrier4 = A*np.sin(2*np.pi*f4*t)
-    y = []
+    #Se crea la señal que da el inicio de la lectura de datos
+    initSignal = createInitSignal(14000)
+    y = initSignal
     samplesPerThreads = len(signal)//threads
     start = 0
     end = samplesPerThreads
@@ -215,13 +217,17 @@ def QFSKSecuential(signal, fs, bitRate, title,audio):
     y = []
     f1 = 10000
     f4 = 5000
-    fs = 6*f1
+    fs = 14000*6
     t=np.arange(0, 1/bitRate, 1 / fs)
     carrier1 = A*np.cos(2*np.pi*f1*t)
     carrier2 = A*np.cos(2*np.pi*f4*t)
     carrier3 = A*np.sin(2*np.pi*f1*t)
     carrier4 = A*np.sin(2*np.pi*f4*t)
+    
+    #Se crea la señal que da el inicio de la lectura de datos
+    initSignal = createInitSignal(14000)
     y = []
+    y.extend(initSignal)
     
     buff = ""
     if(not audio):
@@ -370,14 +376,10 @@ def mainDigitalModulation(modType,flag,fileName):
             noise = np.random.normal(0.0, 1, len(y))
             # y = y + noise
             print("Escribiendo modulacion ...")
-            sin.writeWav("QFSK"+fileName,6000*10,np.array(y))
+            sin.writeWav("newQFSK"+fileName,14000*6,np.array(y))
             print("######### Demodulacion ###########")
 
-            #Aplicando transformada de Fourier
-            # plt.figure(2)
-            # xfft,yfft = fttMod.calcFFT(44100,y)
-            # oPlot.plotTransform(xfft,yfft,"transformada audio")
-
+            """
             demodulation = demod.qam_demodulation(y,baudRate)
             print("#########   Testing   ############")
             
@@ -394,6 +396,7 @@ def mainDigitalModulation(modType,flag,fileName):
             #data = parseDataToBytes(demodulation)
             
             writeWav("../../Wav/wavQFSK"+fileName,demodulation,audioParams)
+            """
             print("#########   Fin del procesamiento    #######")
 
 
@@ -466,6 +469,13 @@ def convertStringToByte(string):
 def BytesToInt(data):
     a = 10
 
+def createInitSignal(freq):
+    fs = freq*6
+    t=np.arange(0, float(1), 1 / fs)
+    initSignal = np.cos(2*np.pi*freq*t)
+    return initSignal
+
+
 
 result=[]
-mainDigitalModulation("QFSK",1,"mario")
+# mainDigitalModulation("QFSK",1,"mario")
