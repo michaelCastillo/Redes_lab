@@ -4,6 +4,8 @@ sys.path.insert(0, '../')
 import Plot as oPlot
 sys.path.insert(0, './')
 import DigitalDemodulation as demod
+sys.path.insert(0, '../FFT/')
+import FFT as fttMod
 
 
 import numpy as np
@@ -153,10 +155,8 @@ def QFSK(signal, fs, bitRate, threads, title):
     signalModulated=[]
     A=1
     y = []
-    f1 = 16000
-    f2 = 12000
-    f3 = 8000
-    f4 = 4000
+    f1 = 6000
+    f4 = 2000
     fs = 5*f1
     t=np.arange(0, 1/bitRate, 1 / fs)
     carrier1 = A*np.cos(2*np.pi*f1*t)
@@ -207,17 +207,15 @@ def QFSK(signal, fs, bitRate, threads, title):
     #Demodulacion
 
 
-def QFSKSecuential(signal, fs, bitRate, threads, title,audio):
+def QFSKSecuential(signal, fs, bitRate, title,audio):
     
     plot = False
     signalModulated=[]
     A=1
     y = []
-    f1 = 16000
-    f2 = 12000
-    f3 = 8000
-    f4 = 4000
-    fs = 5*f1
+    f1 = 10000
+    f4 = 5000
+    fs = 6*f1
     t=np.arange(0, 1/bitRate, 1 / fs)
     carrier1 = A*np.cos(2*np.pi*f1*t)
     carrier2 = A*np.cos(2*np.pi*f4*t)
@@ -265,24 +263,24 @@ def QFSKSecuential(signal, fs, bitRate, threads, title,audio):
             symbolIndex = symbolIndex + 1
     
     
-    print("Inicio de ploteo")
     if(plot):
+        print("Inicio de ploteo")
         #Grafica de las portadoras
         lenCarriers = len(carrier1)
         lenTime = len(t)
         plt.figure(1)
         plt.subplot(2,2,1)
-        oPlot.plotSignalTime(carrier1[0:lenCarriers//8],t[0:lenTime//8],"Portadora (00)",False)
+        oPlot.plotSignalTime(carrier1[0:lenCarriers],t[0:lenTime],"Portadora (00)",False)
         plt.subplot(2,2,2)
-        oPlot.plotSignalTime(carrier2[0:lenCarriers//8],t[0:lenTime//8],"Portadora (01) ",False)
+        oPlot.plotSignalTime(carrier2[0:lenCarriers],t[0:lenTime],"Portadora (01) ",False)
         plt.subplot(2,2,3)
-        oPlot.plotSignalTime(carrier3[0:lenCarriers//8],t[0:lenTime//8],"Portadora (10)",False)
+        oPlot.plotSignalTime(carrier3[0:lenCarriers],t[0:lenTime],"Portadora (10)",False)
         plt.subplot(2,2,4)
-        oPlot.plotSignalTime(carrier4[0:lenCarriers//8],t[0:lenTime//8],"Portadora (11) ",False)
-        #Grafica de la señal modulada
-        plt.figure(2)
-        timeModulated = getSignalTime(fs,y)
-        oPlot.plotSignalTime(y,timeModulated,"Senal modulada",False)
+        oPlot.plotSignalTime(carrier4[0:lenCarriers],t[0:lenTime],"Portadora (11) ",False)
+
+    # plt.figure(2)
+    # timeModulated = getSignalTime(fs,y)
+    # oPlot.plotSignalTime(y[0:len(signal)//16],timeModulated[0:len(signal)//16],"Senal modulada",False)
     return y
     #Demodulacion
 
@@ -343,19 +341,19 @@ def mainDigitalModulation(modType,flag,fileName):
     test=[]
     binarySignal=[]
     if(not flagTest):  
-        fs, signal = wavfile.read("../../Wav/"+fileName+".wav")
+        #fs, signal = wavfile.read("../../Wav/"+fileName+".wav")
+        fs, signal = FD.openDigitalWav(fileName)
         test=w.open("../../Wav/"+fileName+".wav", "rb")
         audioParams = test.getparams()
         test=test.readframes(test.getnframes())
-        print("Tamano del audio: "+str(len(test)))
     else:
-        test=np.random.randint(2, size=1000000)
+        test=np.random.randint(2, size=10000)
 
-    baudRate=5000
-    threads = int(input("Ingrese cantidad de hebras: "))
+    baudRate=2000
     y=np.array([])    
     result = []
     fs = 10
+    threads = 0
     if(modType=="ASK"):
         y=ASK(test, fs, baudRate,threads,  title="ASK "+fileName)
     if(modType=="FSK"):
@@ -366,14 +364,23 @@ def mainDigitalModulation(modType,flag,fileName):
         if(flgCompleteTest):
             completeTest(baudRate,20)
         else:
+            
             print("######### Modulacion #############")
-            y = QFSKSecuential(test, fs, baudRate, threads, title="QFSK "+fileName,audio=flagTest)
-            #noise = np.random.normal(0.0, 1, len(y))
-            #y = y + noise
-            #print("Signal => "+str(y))
+            y = QFSKSecuential(test, fs, baudRate, title="QFSK "+fileName,audio=flagTest)
+            noise = np.random.normal(0.0, 1, len(y))
+            # y = y + noise
+            print("Escribiendo modulacion ...")
+            sin.writeWav("QFSK"+fileName,6000*10,np.array(y))
             print("######### Demodulacion ###########")
+
+            #Aplicando transformada de Fourier
+            # plt.figure(2)
+            # xfft,yfft = fttMod.calcFFT(44100,y)
+            # oPlot.plotTransform(xfft,yfft,"transformada audio")
+
             demodulation = demod.qam_demodulation(y,baudRate)
             print("#########   Testing   ############")
+            
             if(not flagTest):
                 result = demod.depureMachine(test,demodulation)
                 print("Tasa de error: "+str(result)+"%")
@@ -383,13 +390,13 @@ def mainDigitalModulation(modType,flag,fileName):
                 print("Tasa de error: "+str(result)+"%")
                 print("#########  Fin testing  #########")
             print("######### Escribiendo el resultado #########")
-            data = parseDataToBytes(demodulation)
+            
+            #data = parseDataToBytes(demodulation)
             
             writeWav("../../Wav/wavQFSK"+fileName,demodulation,audioParams)
             print("#########   Fin del procesamiento    #######")
 
 
-    #sin.writeWav(fileName+modType, 44200, parseDataToBytes(demodulation))
     plt.show()
     #Plot de correlacionadores
     #demodulacion FSK
@@ -397,20 +404,23 @@ def mainDigitalModulation(modType,flag,fileName):
 
 
 def completeTest(baudRate, times):
+    baudTesting = True
     results = []
-    fs = 16000*5
+    fs = 6000*5
     threads = 10
     fileName = "asd"
-    baudRate = 1000
+    baudRate = 100
     rates = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]
+
     for i in range(0,times):
-        baudRate = baudRate + 1000
-        test=np.random.randint(2, size=1000000)
+        if(baudTesting):
+            baudRate = baudRate + 100
+
+        test=np.random.randint(2, size=100000)
         print("######### Modulacion #############")
-        y = QFSKSecuential(test, fs, baudRate, threads, title="QFSK "+fileName)
-        noise = np.random.normal(0.0, 1, len(y))
+        y = QFSKSecuential(test, fs, baudRate,"QFSK "+fileName,True)
+        noise = np.random.normal(0, 1, len(y))
         y = y + noise
-        #print("Signal => "+str(y))
         print("######### Demodulacion ###########")
         demodulation = demod.qam_demodulation(y,baudRate)
         print("#########   Testing   ############")
@@ -419,7 +429,7 @@ def completeTest(baudRate, times):
         print("bdr: " +str(baudRate)+"  Tasa de error: "+str(result)+"%")
         print("#########  Fin testing  #########")
         
-    plt.figure(3)
+    plt.figure(5)
     plt.plot(rates,results)
 
 
@@ -452,7 +462,9 @@ def parseDataToBytes(data):
 def convertStringToByte(string):
     string = "0x%x" % (int(string, 2))
     return string.encode()
-        
+
+def BytesToInt(data):
+    a = 10
 
 
 result=[]
