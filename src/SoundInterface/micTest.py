@@ -22,6 +22,9 @@ CHUNK = 2048 # RATE / number of updates per second
 
 RECORD_SECONDS = 200
 
+timeout = -10
+timeoutFlag = False
+timeoutFlagAux = True
 
 # use a Blackman window
 window = np.blackman(CHUNK)
@@ -35,26 +38,27 @@ def listener(stream,capturing):
     waveData = wave.struct.unpack("%dh"%(CHUNK), data)
     npArrayData = np.array(waveData)
     indata = npArrayData*window
-    #Plot time domain
-
+    global timeoutFlagAux
+    global timeoutFlag
+    global timeout
     fftData=np.abs(np.fft.rfft(indata))
     fftTime=np.fft.rfftfreq(CHUNK, 1./RATE)
     which = fftData[1:].argmax() + 1
-    #Plot frequency domain graph
     
     if(capturing):
         print("Se inicia la demodulacion")
+        if (timeoutFlagAux):
+            timeout = time.time() + 10
+            timeoutFlagAux = False
+        if (time.time()>timeout):
+            timeoutFlag = True
         return demod.qam_demodulation(waveData,2000)
-        if( int(thefreq) > initFreq-500 and int(thefreq) < initFreq+500):
-            print("Saliendo...")
-            return 203
+
     else:
         # print("buscando... ")
-        # use quadratic interpolation around the max
         if which != len(fftData)-1:
             y0,y1,y2 = np.log(fftData[which-1:which+2:])
             x1 = (y2 - y0) * .5 / (2 * y1 - y2 - y0)
-            # find the frequency and output it
             thefreq = (which+x1)*RATE/CHUNK
             
             if( int(thefreq) > initFreq-500 and int(thefreq) < initFreq+500):
@@ -96,9 +100,11 @@ def player():
 
         stream2=p.open(format=pyaudio.paInt16,channels=1,rate=RATE,input=True,
                   frames_per_buffer=CHUNK)
+        """
         timeout = time.time() + 2
         while time.time() < timeout:
             soundPlot(stream2)
+        """
         stream2.stop_stream()
         stream2.close()
         #p.terminate()
@@ -112,16 +118,23 @@ def testing(initFreq):
     stream=p.open(format=pyaudio.paInt16,channels=1,rate=RATE,input=True,
                     frames_per_buffer=CHUNK)
 
-    plt.ion()
-    fig = plt.figure(figsize=(10,8))
-    ax1 = fig.add_subplot(211)
-    ax2 = fig.add_subplot(212)
+    # plt.ion()
+    # fig = plt.figure(figsize=(10,8))
+    # ax1 = fig.add_subplot(211)
+    # ax2 = fig.add_subplot(212)
     capturing = False
     response = 404
     dataDemod = []
+    
+  
+    global timeout
+    # Salir del ciclo en un tiempo
+    timeout = time.time() + 10
     while True:
         response = listener(stream,capturing)
         # print(str(response))
+        if (timeout):
+            break
         if(capturing):
             dataDemod.extend(response)
         else:

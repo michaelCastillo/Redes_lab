@@ -52,9 +52,12 @@ def depureMachineSecuential(digitalSignal,digitalDemodulation):
 
 
 def fsk_demodulation(signal,f1,f2,fs,bitRate):
-    plot = False
-    A=100
+    plot = True
+    A=1
+    print("len signal => ",str(len(signal)))
     t=np.arange(0, 1/bitRate, 1 / fs)
+    print("f1=> ",f1)
+    print("f2=> ",f2)
     carrier1 = A*np.cos(2*np.pi*f1*t)
     carrier2 = A*np.cos(2*np.pi*f2*t)
 
@@ -67,37 +70,16 @@ def fsk_demodulation(signal,f1,f2,fs,bitRate):
     if(plot):
         plt.figure(2)
         plt.subplot(2,1,1)
-        plt.plot(corr1[0:10000])
+        plt.plot(corr1[0:len(corr1)//100])
         plt.subplot(2,1,2)
-        plt.plot(corr2[0:10000])
+        plt.plot(corr2[0:len(corr1)//100])
     # plt.subplot(3,1,2)
     # oPlot.plotTransform(xfft_corr2, fftMod_corr2, "Señal Portadora")
     print("Transformadas calculadas")
     
     
     arrayBits = []
-    
 
-    
-    
-    #Se genera un array vacio para almacenar los bits obtenidos.
-    #Para recorrer el arreglo de correlaciones se debe mover fs_rate*tiempoBit para encontrar
-    # cada maximo
-    
-    skip = fs//bitRate  #muestras por 1 bit.
-    bit_index = skip//2        # Indice del bit inicia en el centro de la primera señal.
-    depur = 0
-    indexDemod1 = []
-    indexDemod2 = []
-    while(bit_index < len(corr1)):
-        bitCorr1 = corr1[bit_index]
-        bitCorr2 = corr2[bit_index]
-        if( bitCorr1 > bitCorr2):
-            arrayBits.append(1)
-        else:
-            arrayBits.append(0)
-        bit_index = bit_index + skip
-    
     return arrayBits
 
 

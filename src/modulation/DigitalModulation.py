@@ -294,8 +294,34 @@ def QFSKSecuential(signal, fs, bitRate, title,audio):
     #Demodulacion
 
 
+def FSKSeq(signal, fs, bitRate, threads, title):
+    
+    plot = True
+    signalModulated=[]
+    A=10    
+    f1= 15000
+    f2= 4000
+    fs = 10*f1
+    t=np.arange(0, 1/bitRate, 1 / fs)
+    carrier1 = A*np.cos(2*np.pi*f1*t)
+    carrier2 = A*np.cos(2*np.pi*f2*t)
+    i = 0
+    for bit in signal:
+        if(bit == 1):
+            signalModulated.extend(carrier1)
+        else:
+            signalModulated.extend(carrier2)
+    if(plot):
+        #Grafica de las portadoras
+        plt.figure(1)
+        plt.subplot(2,1,1)
+        lenCarriers = len(carrier1)
+        oPlot.plotSignalTime(carrier1[0:lenCarriers//2],t[0:lenCarriers//2],"Portadora (1)",False)
+        plt.subplot(2,1,2)
+        oPlot.plotSignalTime(carrier2[0:lenCarriers//2],t[0:lenCarriers//2],"Portadora (0) ",False)
+        #Grafica de la señal modulada
 
-
+    return signalModulated
 
 def FSK(signal, fs, bitRate, threads, title):
     
@@ -304,7 +330,7 @@ def FSK(signal, fs, bitRate, threads, title):
     A=10    
     y = []
     f1= 15000
-    f2= 2000
+    f2= 4000
     fs = 5*f1
     t=np.arange(0, 1/bitRate, 1 / fs)
     carrier1 = A*np.cos(2*np.pi*f1*t)
@@ -345,7 +371,7 @@ def printTimeoutBarrier():
 
 
 def mainDigitalModulation(modType,flag,fileName):
-    flagTest=False
+    flagTest=True
     audioParams = []
     test=[]
     binarySignal=[]
@@ -366,8 +392,9 @@ def mainDigitalModulation(modType,flag,fileName):
     if(modType=="ASK"):
         y=ASK(test, fs, baudRate,threads,  title="ASK "+fileName)
     if(modType=="FSK"):
-        y=FSK(test, fs, baudRate, threads, title="FSK "+fileName)
-
+        print("Es fsk")
+        y=FSKSeq(test, fs, baudRate, threads, title="FSK "+fileName)
+        demod.fsk_demodulation(y,15000,4000,15000*10,baudRate)
     if (modType == "QFSK"):
         flgCompleteTest = False
         if(flgCompleteTest):
